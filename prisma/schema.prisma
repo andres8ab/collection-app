@@ -1,0 +1,122 @@
+// Gestión de Cartera - Prisma schema for Neon PostgreSQL
+// Run: npx prisma generate | npx prisma migrate dev
+// URLs are in prisma.config.ts (use DIRECT_URL for migrate)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Ciudad {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientes Cliente[]
+  bills    Bill[]
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nombre    String
+  nit       String?
+  direccion String?
+  ciudadId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ciudad Ciudad   @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+  bills  Bill[]
+}
+
+model Vendedor {
+  id        String   @id @default(cuid())
+  nombre    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bills       Bill[]
+  settlements MonthlySettlement[]
+}
+
+model Bill {
+  id                 String    @id @default(cuid())
+  fv                 Int       // Número de factura
+  fecha              DateTime  @db.Date
+  valor              Decimal   @db.Decimal(14, 2)
+  devo               Decimal?  @db.Decimal(14, 2) // Devolución
+  abono              Decimal?  @db.Decimal(14, 2) // Abono
+  reteFuente         Decimal?  @db.Decimal(14, 2)
+  iva                Decimal?  @db.Decimal(14, 2)
+  vSinIva            Decimal?  @db.Decimal(14, 2) // Valor sin IVA (calculated, stored for reports)
+  porcentajeComision Decimal   @default(0.05) @db.Decimal(5, 4)
+  vComi              Decimal?  @db.Decimal(14, 2) // Valor comisión (calculated)
+  flete              Decimal?  @db.Decimal(14, 2)
+  comentarios        String?
+  estado             BillEstado @default(PENDIENTE)
+  liquidatedAt       DateTime? // When "liquidar" was pressed
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  clienteId   String
+  ciudadId    String
+  vendedorId  String
+  settlementId String?
+
+  cliente   Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  ciudad   Ciudad            @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+  vendedor Vendedor          @relation(fields: [vendedorId], references: [id], onDelete: Restrict)
+  settlement MonthlySettlement? @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+  payments  BillPayment[]
+
+  @@unique([clienteId, fv])
+  @@index([vendedorId, estado])
+  @@index([clienteId, fecha])
+  @@index([settlementId])
+}
+
+model BillPayment {
+  id        String   @id @default(cuid())
+  billId    String
+  amount    Decimal  @db.Decimal(14, 2)
+  paidAt    DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId, paidAt])
+}
+
+enum BillEstado {
+  PENDIENTE
+  LIQUIDADA
+}
+
+model MonthlySettlement {
+  id         String   @id @default(cuid())
+  vendedorId String
+  month      String   // "YYYY-MM"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  vendedor Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+  bills    Bill[]
+
+  @@unique([vendedorId, month])
+  @@index([vendedorId])
+}
+
+// Optional: for future Neon Auth or simple app users
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
