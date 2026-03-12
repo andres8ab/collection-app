@@ -1,7 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import prismaPkg from '@prisma/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+const { PrismaClient } = prismaPkg
+
+const globalForPrisma = globalThis as unknown as { prisma: prismaPkg.PrismaClient }
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL
