@@ -16,8 +16,8 @@ function SignInPage() {
   if (!loading && user) {
     // Already signed in, just show a small message
     return (
-      <main className="page-wrap flex min-h-[70vh] items-center justify-center px-4">
-        <div className="island-shell w-full max-w-md rounded-2xl p-6 sm:p-8">
+      <main className="page-wrap flex min-h-[70vh] items-center justify-center px-3 py-8 sm:px-4">
+        <div className="island-shell w-full max-w-md rounded-2xl p-4 sm:p-8">
           <p className="island-kicker mb-2">Sesión iniciada</p>
           <h1 className="display-title mb-3 text-2xl font-bold text-[var(--sea-ink)] sm:text-3xl">
             Ya estás autenticado
@@ -53,8 +53,8 @@ function SignInPage() {
   }
 
   return (
-    <main className="page-wrap flex min-h-[70vh] items-center justify-center px-4">
-      <section className="island-shell w-full max-w-md rounded-2xl p-6 sm:p-8">
+    <main className="page-wrap flex min-h-[70vh] items-center justify-center px-3 py-8 sm:px-4">
+      <section className="island-shell w-full max-w-md rounded-2xl p-4 sm:p-8">
         <p className="island-kicker mb-2">Acceso</p>
         <h1 className="display-title mb-3 text-2xl font-bold text-[var(--sea-ink)] sm:text-3xl">
           Inicia sesión

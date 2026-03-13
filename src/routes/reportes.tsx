@@ -77,20 +77,20 @@ function ReportesPage() {
   ) ?? 0
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
+    <main className="page-wrap px-3 pb-8 pt-10 sm:px-4 sm:pt-14">
       <h1 className="display-title mb-6 text-2xl font-bold text-[var(--sea-ink)] sm:text-3xl">
         Reportes
       </h1>
 
-      <section className="island-shell mb-8 rounded-2xl p-6">
+      <section className="island-shell mb-8 rounded-2xl p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-[var(--sea-ink)]">
           Estado de cuenta
         </h2>
         <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">
           Seleccione un cliente y rango de fechas para ver el estado de cuenta.
         </p>
-        <form onSubmit={handleSubmit} className="flex flex-wrap gap-4">
-          <div className="min-w-[200px]">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+          <div className="min-w-0 flex-1 sm:min-w-[200px] sm:flex-none">
             <label className="mb-1 block text-sm font-medium text-[var(--sea-ink-soft)]">
               Cliente
             </label>
@@ -135,7 +135,7 @@ function ReportesPage() {
           <div className="flex items-end">
             <button
               type="submit"
-              className="rounded-xl bg-[var(--lagoon)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              className="min-h-[2.5rem] w-full rounded-xl bg-[var(--lagoon)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 sm:w-auto"
             >
               Generar
             </button>
@@ -148,7 +148,7 @@ function ReportesPage() {
       )}
 
       {statement && !isLoading && (
-        <section className="island-shell rounded-2xl p-6">
+        <section className="island-shell rounded-2xl p-4 sm:p-6">
           <h2 className="mb-2 text-lg font-semibold text-[var(--sea-ink)]">
             Estado de cuenta: {statement.cliente.nombre}
           </h2>
@@ -161,25 +161,25 @@ function ReportesPage() {
             {new Date(request!.hasta).toLocaleDateString('es-CO')}
           </p>
 
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-              <div className="text-sm text-[var(--sea-ink-soft)]">Valor total</div>
-              <div className="text-xl font-bold">{fmtMoney(totalValor)}</div>
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:p-4">
+              <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Valor total</div>
+              <div className="truncate text-lg font-bold sm:text-xl">{fmtMoney(totalValor)}</div>
             </div>
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-              <div className="text-sm text-[var(--sea-ink-soft)]">Total abonado</div>
-              <div className="text-xl font-bold">{fmtMoney(totalAbono)}</div>
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:p-4">
+              <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Total abonado</div>
+              <div className="truncate text-lg font-bold sm:text-xl">{fmtMoney(totalAbono)}</div>
             </div>
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-              <div className="text-sm text-[var(--sea-ink-soft)]">Saldo</div>
-              <div className={`text-xl font-bold ${totalSaldo > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:p-4">
+              <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Saldo</div>
+              <div className={`truncate text-lg font-bold sm:text-xl ${totalSaldo > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                 {fmtMoney(totalSaldo)}
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+          <div className="responsive-table-wrap">
+            <table className="w-full min-w-[600px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">
                   <th className="px-3 py-2 text-left font-semibold uppercase text-[var(--sea-ink-soft)]">

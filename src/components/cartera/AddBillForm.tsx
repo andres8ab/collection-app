@@ -86,7 +86,7 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="island-shell space-y-4 rounded-2xl p-6"
+      className="island-shell w-full space-y-4 rounded-2xl p-4 sm:p-6"
     >
       <h3 className="m-0 text-lg font-semibold text-[var(--sea-ink)]">Nueva factura</h3>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -126,7 +126,11 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
             options={ciudades}
             value={ciudadId}
             onChange={(id) => setCiudadId(id)}
-            onCreate={(nombre) => createCiudad({ data: { nombre } })}
+            onCreate={async (nombre) => {
+              const c = await createCiudad({ data: { nombre } })
+              queryClient.invalidateQueries({ queryKey: ['ciudades'] })
+              return c
+            }}
           />
         </div>
         <div>
@@ -135,7 +139,11 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
             options={vendedores}
             value={vendedorId}
             onChange={(id) => setVendedorId(id)}
-            onCreate={(nombre) => createVendedor({ data: { nombre } })}
+            onCreate={async (nombre) => {
+              const v = await createVendedor({ data: { nombre } })
+              queryClient.invalidateQueries({ queryKey: ['vendedores'] })
+              return v
+            }}
           />
         </div>
         <div>
@@ -151,11 +159,11 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
           />
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-medium"
+          className="min-h-[2.5rem] rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-medium"
         >
           Cancelar
         </button>
@@ -169,7 +177,7 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
             !fv ||
             !valor
           }
-          className="rounded-xl bg-[var(--lagoon)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          className="min-h-[2.5rem] rounded-xl bg-[var(--lagoon)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
         >
           {createBillMutation.isPending ? 'Guardando...' : 'Agregar factura'}
         </button>

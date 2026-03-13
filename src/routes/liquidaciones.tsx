@@ -74,7 +74,7 @@ function LiquidacionesPage() {
   ) ?? 0
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
+    <main className="page-wrap px-3 pb-8 pt-10 sm:px-4 sm:pt-14">
       <h1 className="display-title mb-6 text-2xl font-bold text-[var(--sea-ink)] sm:text-3xl">
         Liquidaciones mensuales
       </h1>
@@ -89,7 +89,7 @@ function LiquidacionesPage() {
             setVendedorId(e.target.value)
             setSelectedSettlementId(null)
           }}
-          className="w-full max-w-xs rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm sm:max-w-xs"
         >
           <option value="">Seleccione vendedor</option>
           {vendedores.map((v) => (
@@ -110,7 +110,7 @@ function LiquidacionesPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="w-full lg:w-64 shrink-0">
+          <div className="w-full shrink-0 lg:w-64">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
               Meses
             </div>
@@ -146,27 +146,27 @@ function LiquidacionesPage() {
               </div>
             ) : (
               <>
-                <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="island-shell rounded-xl p-4">
-                    <div className="text-lg font-bold">{getMesLabel(selectedSettlement.month)}</div>
-                    <div className="text-sm text-[var(--sea-ink-soft)]">Mes</div>
+                <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                  <div className="island-shell rounded-xl p-3 sm:p-4">
+                    <div className="truncate text-base font-bold sm:text-lg">{getMesLabel(selectedSettlement.month)}</div>
+                    <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Mes</div>
                   </div>
-                  <div className="island-shell rounded-xl p-4">
-                    <div className="text-lg font-bold">{selectedSettlement.bills.length}</div>
-                    <div className="text-sm text-[var(--sea-ink-soft)]">Facturas</div>
+                  <div className="island-shell rounded-xl p-3 sm:p-4">
+                    <div className="text-base font-bold sm:text-lg">{selectedSettlement.bills.length}</div>
+                    <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Facturas</div>
                   </div>
-                  <div className="island-shell rounded-xl p-4">
-                    <div className="text-lg font-bold text-blue-600">{fmtMoney(totalValor)}</div>
-                    <div className="text-sm text-[var(--sea-ink-soft)]">Valor total</div>
+                  <div className="island-shell rounded-xl p-3 sm:p-4">
+                    <div className="truncate text-base font-bold text-blue-600 sm:text-lg">{fmtMoney(totalValor)}</div>
+                    <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Valor total</div>
                   </div>
-                  <div className="island-shell rounded-xl p-4">
-                    <div className="text-lg font-bold text-emerald-600">{fmtMoney(totalComision)}</div>
-                    <div className="text-sm text-[var(--sea-ink-soft)]">Total comisión</div>
+                  <div className="island-shell rounded-xl p-3 sm:p-4">
+                    <div className="truncate text-base font-bold text-emerald-600 sm:text-lg">{fmtMoney(totalComision)}</div>
+                    <div className="text-xs text-[var(--sea-ink-soft)] sm:text-sm">Total comisión</div>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-                  <table className="w-full border-collapse text-sm">
+                <div className="responsive-table-wrap rounded-xl border border-[var(--line)]">
+                  <table className="w-full min-w-[500px] border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">
                         <th className="px-3 py-2 text-left font-semibold uppercase text-[var(--sea-ink-soft)]">

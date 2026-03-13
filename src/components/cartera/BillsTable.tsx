@@ -134,19 +134,19 @@ export function BillsTable() {
   if (isLoading) return <div className="py-8 text-center text-[var(--sea-ink-soft)]">Cargando facturas...</div>
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
-      <table className="w-full border-collapse text-sm">
+    <div className="responsive-table-wrap rounded-xl border border-[var(--line)]">
+      <table className="w-full min-w-[800px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">
             {COLS.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-3 py-2 text-left font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]"
+                className="whitespace-nowrap px-2 py-2 text-left font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)] sm:px-3"
               >
                 {col.label}
               </th>
             ))}
-            <th className="whitespace-nowrap px-3 py-2 text-center font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
+            <th className="whitespace-nowrap px-2 py-2 text-center font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)] sm:px-3">
               Acción
             </th>
           </tr>
@@ -157,7 +157,7 @@ export function BillsTable() {
             return (
               <tr key={b.id} className="border-b border-[var(--line)] hover:bg-[var(--link-bg-hover)]">
                 {COLS.map((col) => (
-                  <td key={col.key} className="px-3 py-2 text-[var(--sea-ink)]">
+                  <td key={col.key} className="px-2 py-2 text-[var(--sea-ink)] sm:px-3">
                     {col.key === 'devo' && isEditing ? (
                       <input
                         type="text"
@@ -198,9 +198,9 @@ export function BillsTable() {
                     )}
                   </td>
                 ))}
-                <td className="px-3 py-2">
+                <td className="px-2 py-2 sm:px-3">
                   {isEditing ? (
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex flex-wrap items-center justify-center gap-1">
                       <button
                         type="button"
                         onClick={() => saveEdit(b.id)}
@@ -315,12 +315,12 @@ function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4">
-      <div className="island-shell max-h-[90vh] w-full max-w-lg overflow-hidden rounded-2xl bg-[var(--surface-strong)]">
-        <div className="flex items-start justify-between border-b border-[var(--line)] px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
+      <div className="island-shell max-h-[90vh] w-full max-w-lg overflow-hidden rounded-t-2xl bg-[var(--surface-strong)] pb-[env(safe-area-inset-bottom)] sm:rounded-2xl sm:pb-0">
+        <div className="flex items-start justify-between gap-2 border-b border-[var(--line)] px-4 py-3 sm:px-5 sm:py-4">
           <div>
             <p className="island-kicker mb-1">Abonos</p>
-            <h2 className="display-title m-0 text-xl font-bold text-[var(--sea-ink)]">
+            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl">
               FV {bill.fv} · {bill.cliente?.nombre ?? ''}
             </h2>
           </div>
@@ -333,8 +333,8 @@ function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
-          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
+        <div className="space-y-4 px-4 py-3 sm:px-5 sm:py-4">
+          <form onSubmit={handleAdd} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div>
               <label className="mb-1 block text-xs font-medium text-[var(--sea-ink-soft)]">
                 Monto

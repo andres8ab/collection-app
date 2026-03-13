@@ -1,53 +1,59 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from "react";
 
-type Ciudad = { id: string; nombre: string }
+export type Ciudad = { id: string; nombre: string };
 
 export function ComboboxCiudad({
   options,
   value,
   onChange,
   onCreate,
-  placeholder = 'Buscar o agregar ciudad...',
+  placeholder = "Buscar o agregar ciudad...",
   disabled,
+  nested,
 }: {
-  options: Ciudad[]
-  value: string
-  onChange: (id: string, ciudad: Ciudad) => void
-  onCreate: (nombre: string) => Promise<Ciudad>
-  placeholder?: string
-  disabled?: boolean
+  options: Ciudad[];
+  value: string;
+  onChange: (id: string, ciudad: Ciudad) => void;
+  onCreate: (nombre: string) => Promise<Ciudad>;
+  placeholder?: string;
+  disabled?: boolean;
+  /** When true, dropdown uses higher z-index so it appears above parent dropdown (e.g. inside ComboboxCliente) */
+  nested?: boolean;
 }) {
-  const [open, setOpen] = useState(false)
-  const [filter, setFilter] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [newName, setNewName] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
 
-  const selected = options.find((c) => c.id === value)
+  const selected = options.find((c) => c.id === value);
   const filtered = filter.trim()
-    ? options.filter((c) => c.nombre.toLowerCase().includes(filter.toLowerCase()))
-    : options
+    ? options.filter((c) =>
+        c.nombre.toLowerCase().includes(filter.toLowerCase()),
+      )
+    : options;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function handleAdd() {
-    const nombre = newName.trim()
-    if (!nombre) return
-    setAdding(true)
+    const nombre = (newName || filter).trim();
+    if (!nombre) return;
+    setAdding(true);
     try {
-      const created = await onCreate(nombre)
-      onChange(created.id, created)
-      setNewName('')
-      setFilter('')
-      setOpen(false)
+      const created = await onCreate(nombre);
+      onChange(created.id, created);
+      setNewName("");
+      setFilter("");
+      setOpen(false);
     } finally {
-      setAdding(false)
+      setAdding(false);
     }
   }
 
@@ -62,46 +68,49 @@ export function ComboboxCiudad({
         {selected ? selected.nombre : placeholder}
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg">
+        <div className={`absolute left-0 top-full mt-1 w-full min-w-0 max-w-[min(12rem,calc(100vw-1.5rem))] max-h-72 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg flex flex-col sm:min-w-[12rem] sm:max-w-none ${nested ? "z-[1001]" : "z-[1000]"}`}>
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filtrar..."
-            className="w-full border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
+            className="w-full shrink-0 border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
             autoFocus
           />
-          {filter.trim() && !options.some((c) => c.nombre.toLowerCase() === filter.trim().toLowerCase()) && (
-            <div className="border-b border-[var(--line)] p-2">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={adding ? newName : newName || filter}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nueva ciudad"
-                  className="flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-sm"
-                  disabled={adding}
-                />
-                <button
-                  type="button"
-                  disabled={adding || !(newName || filter).trim()}
-                  onClick={handleAdd}
-                  className="rounded-lg bg-[var(--lagoon)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {adding ? '...' : 'Agregar'}
-                </button>
+          {filter.trim() &&
+            !options.some(
+              (c) => c.nombre.toLowerCase() === filter.trim().toLowerCase(),
+            ) && (
+              <div className="shrink-0 border-b border-[var(--line)] p-2">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={adding ? newName : newName || filter}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Nueva ciudad"
+                    className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-sm"
+                    disabled={adding}
+                  />
+                  <button
+                    type="button"
+                    disabled={adding || !(newName || filter).trim()}
+                    onClick={handleAdd}
+                    className="shrink-0 whitespace-nowrap rounded-lg bg-[var(--lagoon)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    {adding ? "..." : "Agregar"}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-          <ul className="max-h-40 overflow-auto py-1">
+            )}
+          <ul className="min-h-0 flex-1 overflow-auto py-1 max-h-40">
             {filtered.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
                   onClick={() => {
-                    onChange(c.id, c)
-                    setOpen(false)
-                    setFilter('')
+                    onChange(c.id, c);
+                    setOpen(false);
+                    setFilter("");
                   }}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--link-bg-hover)]"
                 >
@@ -110,11 +119,13 @@ export function ComboboxCiudad({
               </li>
             ))}
             {filtered.length === 0 && !filter && (
-              <li className="px-3 py-2 text-sm text-[var(--sea-ink-soft)]">Sin ciudades. Escriba y agregue una.</li>
+              <li className="px-3 py-2 text-sm text-[var(--sea-ink-soft)]">
+                Sin ciudades. Escriba y agregue una.
+              </li>
             )}
           </ul>
         </div>
       )}
     </div>
-  )
+  );
 }

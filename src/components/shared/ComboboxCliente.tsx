@@ -87,25 +87,25 @@ export function ComboboxCliente({
         {selected ? selected.nombre : placeholder}
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 max-h-80 w-full min-w-[280px] overflow-auto rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg">
+        <div className="absolute left-0 top-full z-[1000] mt-1 max-h-80 w-full min-w-0 max-w-[min(280px,calc(100vw-1.5rem))] overflow-visible rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg flex flex-col sm:min-w-[280px] sm:max-w-none">
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filtrar por nombre o NIT..."
-            className="w-full border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
+            className="w-full shrink-0 border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
             autoFocus
           />
           {!showAdd ? (
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="w-full border-b border-[var(--line)] px-3 py-2 text-left text-sm font-medium text-[var(--lagoon-deep)] hover:bg-[var(--link-bg-hover)]"
+              className="w-full shrink-0 border-b border-[var(--line)] px-3 py-2 text-left text-sm font-medium text-[var(--lagoon-deep)] hover:bg-[var(--link-bg-hover)]"
             >
               + Agregar nuevo cliente
             </button>
           ) : (
-            <div className="space-y-2 border-b border-[var(--line)] p-3">
+            <div className="shrink-0 space-y-2 border-b border-[var(--line)] p-3 overflow-visible">
               <input
                 type="text"
                 value={addNombre}
@@ -133,6 +133,7 @@ export function ComboboxCliente({
                 onChange={(id) => setAddCiudadId(id)}
                 onCreate={onCreateCiudad}
                 placeholder="Ciudad *"
+                nested
               />
               <div className="flex gap-2">
                 <button
@@ -153,7 +154,7 @@ export function ComboboxCliente({
               </div>
             </div>
           )}
-          <ul className="max-h-40 overflow-auto py-1">
+          <ul className="min-h-0 flex-1 overflow-auto py-1 max-h-40">
             {filtered.map((c) => (
               <li key={c.id}>
                 <button

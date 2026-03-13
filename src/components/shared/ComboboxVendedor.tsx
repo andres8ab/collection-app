@@ -62,38 +62,38 @@ export function ComboboxVendedor({
         {selected ? selected.nombre : placeholder}
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg">
+        <div className="absolute left-0 top-full z-[1000] mt-1 w-full min-w-0 max-w-[min(12rem,calc(100vw-1.5rem))] max-h-72 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-lg flex flex-col sm:min-w-[12rem] sm:max-w-none">
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filtrar..."
-            className="w-full border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
+            className="w-full shrink-0 border-b border-[var(--line)] bg-transparent px-3 py-2 text-sm outline-none"
             autoFocus
           />
           {filter.trim() && !options.some((c) => c.nombre.toLowerCase() === filter.trim().toLowerCase()) && (
-            <div className="border-b border-[var(--line)] p-2">
-              <div className="flex gap-2">
+            <div className="shrink-0 border-b border-[var(--line)] p-2">
+              <div className="flex gap-2 items-center">
                 <input
                   type="text"
                   value={adding ? newName : newName || filter}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Nombre vendedor"
-                  className="flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-sm"
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-sm"
                   disabled={adding}
                 />
                 <button
                   type="button"
                   disabled={adding || !(newName || filter).trim()}
                   onClick={handleAdd}
-                  className="rounded-lg bg-[var(--lagoon)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="shrink-0 whitespace-nowrap rounded-lg bg-[var(--lagoon)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {adding ? '...' : 'Agregar'}
                 </button>
               </div>
             </div>
           )}
-          <ul className="max-h-40 overflow-auto py-1">
+          <ul className="min-h-0 flex-1 overflow-auto py-1 max-h-40">
             {filtered.map((c) => (
               <li key={c.id}>
                 <button

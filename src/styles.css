@@ -99,6 +99,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(400px 320px at -20% -10%, var(--hero-a), transparent 58%),
+      radial-gradient(380px 320px at 120% -10%, var(--hero-b), transparent 62%),
+      radial-gradient(360px 200px at 50% 110%, rgba(79, 184, 178, 0.1), transparent 68%),
+      linear-gradient(180deg, color-mix(in oklab, var(--sand) 68%, white) 0%, var(--foam) 44%, var(--bg-base) 100%);
+  }
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -155,8 +165,14 @@ pre code {
 }
 
 .page-wrap {
-  width: min(1080px, calc(100% - 2rem));
+  width: min(1080px, calc(100% - 1rem));
   margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .page-wrap {
+    width: min(1080px, calc(100% - 2rem));
+  }
 }
 
 .display-title {
@@ -235,6 +251,24 @@ a {
 @media (max-width: 640px) {
   .nav-link::after {
     bottom: -4px;
+  }
+}
+
+/* Responsive table: allow horizontal scroll with visible shadow on small screens */
+.responsive-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .responsive-table-wrap table {
+    font-size: 0.8125rem;
+  }
+  .responsive-table-wrap th,
+  .responsive-table-wrap td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    white-space: nowrap;
   }
 }
 
