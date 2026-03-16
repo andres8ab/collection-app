@@ -40,6 +40,7 @@ CREATE TABLE "Vendedor" (
 -- CreateTable
 CREATE TABLE "Bill" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "fv" INTEGER NOT NULL,
     "fecha" DATE NOT NULL,
     "valor" DECIMAL(14,2) NOT NULL,
@@ -65,8 +66,21 @@ CREATE TABLE "Bill" (
 );
 
 -- CreateTable
+CREATE TABLE "BillPayment" (
+    "id" TEXT NOT NULL,
+    "billId" TEXT NOT NULL,
+    "amount" DECIMAL(14,2) NOT NULL,
+    "paidAt" DATE NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BillPayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "MonthlySettlement" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "vendedorId" TEXT NOT NULL,
     "month" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -80,11 +94,18 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT,
+    "passwordHash" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE INDEX "Bill_userId_fecha_idx" ON "Bill"("userId", "fecha");
+
+-- CreateIndex
+CREATE INDEX "MonthlySettlement_userId_vendedorId_month_idx" ON "MonthlySettlement"("userId", "vendedorId", "month");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Ciudad_nombre_key" ON "Ciudad"("nombre");
@@ -100,6 +121,9 @@ CREATE INDEX "Bill_settlementId_idx" ON "Bill"("settlementId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Bill_clienteId_fv_key" ON "Bill"("clienteId", "fv");
+
+-- CreateIndex
+CREATE INDEX "BillPayment_billId_paidAt_idx" ON "BillPayment"("billId", "paidAt");
 
 -- CreateIndex
 CREATE INDEX "MonthlySettlement_vendedorId_idx" ON "MonthlySettlement"("vendedorId");
@@ -126,4 +150,13 @@ ALTER TABLE "Bill" ADD CONSTRAINT "Bill_vendedorId_fkey" FOREIGN KEY ("vendedorI
 ALTER TABLE "Bill" ADD CONSTRAINT "Bill_settlementId_fkey" FOREIGN KEY ("settlementId") REFERENCES "MonthlySettlement"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "BillPayment" ADD CONSTRAINT "BillPayment_billId_fkey" FOREIGN KEY ("billId") REFERENCES "Bill"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "MonthlySettlement" ADD CONSTRAINT "MonthlySettlement_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Bill" ADD CONSTRAINT "Bill_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MonthlySettlement" ADD CONSTRAINT "MonthlySettlement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

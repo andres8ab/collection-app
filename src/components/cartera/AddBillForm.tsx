@@ -13,13 +13,14 @@ import { ComboboxCiudad } from '../shared/ComboboxCiudad'
 import { ComboboxCliente } from '../shared/ComboboxCliente'
 import { ComboboxVendedor } from '../shared/ComboboxVendedor'
 
-export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
+export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?: () => void }) {
   const queryClient = useQueryClient()
   const [clienteId, setClienteId] = useState('')
   const [ciudadId, setCiudadId] = useState('')
   const [vendedorId, setVendedorId] = useState('')
   const [fv, setFv] = useState('')
   const [valor, setValor] = useState('')
+   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [open, setOpen] = useState(false)
 
   const { data: ciudades = [] } = useQuery({
@@ -36,13 +37,23 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
   })
 
   const createBillMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
+      userId: string
       clienteId: string
       fv: number
       ciudadId: string
       vendedorId: string
       valor: number
-    }) => createBill({ data }),
+      fecha: string
+    }) => {
+      const result = (await createBill({ data })) as
+        | { ok: true; bill: unknown }
+        | { ok: false; error: string }
+      if (!result.ok) {
+        throw new Error(result.error)
+      }
+      return result.bill
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] })
       setClienteId('')
@@ -50,6 +61,7 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
       setVendedorId('')
       setFv('')
       setValor('')
+      setFecha(new Date().toISOString().slice(0, 10))
       setOpen(false)
       onSuccess?.()
     },
@@ -59,15 +71,17 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
     e.preventDefault()
     const fvNum = parseInt(fv, 10)
     const valorNum = parseFloat(valor.replace(/,/g, ''))
-    if (!clienteId || !ciudadId || !vendedorId || !fv || Number.isNaN(fvNum) || Number.isNaN(valorNum) || valorNum <= 0) {
+    if (!clienteId || !ciudadId || !vendedorId || !fv || !fecha || Number.isNaN(fvNum) || Number.isNaN(valorNum) || valorNum <= 0) {
       return
     }
     createBillMutation.mutate({
+      userId,
       clienteId,
       fv: fvNum,
       ciudadId,
       vendedorId,
       valor: valorNum,
+      fecha,
     })
   }
 
@@ -116,6 +130,16 @@ export function AddBillForm({ onSuccess }: { onSuccess?: () => void }) {
             value={fv}
             onChange={(e) => setFv(e.target.value)}
             min={1}
+            className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-[var(--sea-ink-soft)]">Fecha *</label>
+          <input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
             className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
             required
           />

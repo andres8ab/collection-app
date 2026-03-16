@@ -47,8 +47,8 @@ function LiquidacionesPage() {
   })
 
   const { data: settlements = [] } = useQuery({
-    queryKey: ['settlements', vendedorId],
-    queryFn: () => listSettlementsByVendedor({ data: vendedorId }),
+    queryKey: ['settlements', user.id, vendedorId],
+    queryFn: () => listSettlementsByVendedor({ data: { userId: user.id, vendedorId } }),
     enabled: !!vendedorId,
   })
 
@@ -57,7 +57,8 @@ function LiquidacionesPage() {
     : null
 
   const removeMutation = useMutation({
-    mutationFn: (billId: string) => removeBillFromSettlement({ data: billId }),
+    mutationFn: (billId: string) =>
+      removeBillFromSettlement({ data: { userId: user.id, billId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settlements'] })
       queryClient.invalidateQueries({ queryKey: ['bills'] })

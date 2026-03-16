@@ -29,9 +29,11 @@ function CarteraPage() {
     return null
   }
 
+  const userId = user.id
+
   const { data: billsData } = useQuery({
-    queryKey: ['bills'],
-    queryFn: () => listBills({ data: undefined }),
+    queryKey: ['bills', userId],
+    queryFn: () => listBills({ data: { userId } }),
   })
 
   const bills = (billsData ?? []) as any[]
@@ -47,7 +49,7 @@ function CarteraPage() {
           Cartera
         </h1>
         <div className="w-full sm:w-auto">
-          <AddBillForm />
+          <AddBillForm userId={userId} />
         </div>
       </section>
 
@@ -70,7 +72,7 @@ function CarteraPage() {
         </div>
       </div>
 
-      <BillsTable />
+      <BillsTable userId={userId} />
     </main>
   )
 }

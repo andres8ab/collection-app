@@ -5,6 +5,40 @@ import type { BillEstado } from '@prisma/client'
 const toNum = (v: number | string | null | undefined): number | null =>
   v == null ? null : Number(v)
 
+/** Convert Prisma Decimal (or number) to number for serialization over the wire (Seroval cannot serialize Decimal). */
+function decimalToNumber(d: unknown): number | null {
+  if (d == null) return null
+  if (typeof d === 'number') return Number.isNaN(d) ? null : d
+  if (typeof d === 'object' && d !== null && 'toString' in d) return Number(String((d as { toString(): string }).toString())) || null
+  return null
+}
+
+/** Serialize a bill (and nested payments) so Prisma Decimal fields become numbers. */
+function serializeBill<T extends Record<string, unknown>>(bill: T): T {
+  const b = bill as Record<string, unknown>
+  const out = { ...b } as Record<string, unknown>
+  out.valor = Number(decimalToNumber(b.valor) ?? 0)
+  out.devo = decimalToNumber(b.devo)
+  out.abono = decimalToNumber(b.abono)
+  out.reteFuente = decimalToNumber(b.reteFuente)
+  out.iva = decimalToNumber(b.iva)
+  out.vSinIva = decimalToNumber(b.vSinIva)
+  out.vComi = decimalToNumber(b.vComi)
+  out.porcentajeComision = Number(decimalToNumber(b.porcentajeComision) ?? 0)
+  out.flete = decimalToNumber(b.flete)
+  if (Array.isArray(b.payments)) {
+    out.payments = (b.payments as Record<string, unknown>[]).map((p) => ({
+      ...p,
+      amount: Number(decimalToNumber(p.amount) ?? 0),
+    }))
+  }
+  return out as T
+}
+
+function serializePayment<T extends Record<string, unknown>>(p: T): T {
+  return { ...p, amount: Number(decimalToNumber((p as Record<string, unknown>).amount) ?? 0) } as T
+}
+
 // --- Ciudades
 export const listCiudades = createServerFn({ method: 'GET' })
   .inputValidator((q: string | undefined) => q)
@@ -109,30 +143,31 @@ export const createVendedor = createServerFn({ method: 'POST' })
   })
 
 // --- Bills (facturas) — compute derived amounts (stored as numbers; Prisma accepts them for Decimal)
-function computeBillFields(
-  valor: number,
-  devo: number | null,
-  abono: number | null,
-  iva: number | null,
-  pct: number
-) {
-  const d = devo ?? 0
-  const a = abono ?? 0
-  const i = iva ?? 0
-  const vSinIva = valor - i
+function computeBillFields(valor: number, pct: number) {
+  const vSinIva = valor / 1.19
+  const iva = valor - vSinIva
   const vComi = vSinIva * pct
-  return { vSinIva, vComi }
+  return { vSinIva, vComi, iva }
 }
 
-export const listBills = createServerFn({ method: 'GET' })
-  .inputValidator((opts: { vendedorId?: string; clienteId?: string; estado?: BillEstado } | undefined) => opts)
+export const listBills = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (opts: { userId: string; vendedorId?: string; clienteId?: string; estado?: BillEstado }) =>
+      opts,
+  )
   .handler(async (ctx) => {
-    const opts = ctx.data
+    type ListBillsInput = { userId: string; vendedorId?: string; clienteId?: string; estado?: BillEstado }
+    const raw = ctx.data as ListBillsInput | { data?: ListBillsInput }
+    const opts: ListBillsInput | undefined = 'userId' in (raw ?? {}) ? (raw as ListBillsInput) : raw?.data
+    if (!opts?.userId) {
+      return []
+    }
     const bills = await db.bill.findMany({
       where: {
-        ...(opts?.vendedorId && { vendedorId: opts.vendedorId }),
-        ...(opts?.clienteId && { clienteId: opts.clienteId }),
-        ...(opts?.estado && { estado: opts.estado }),
+        userId: opts.userId,
+        ...(opts.vendedorId && { vendedorId: opts.vendedorId }),
+        ...(opts.clienteId && { clienteId: opts.clienteId }),
+        ...(opts.estado && { estado: opts.estado }),
       },
       include: {
         cliente: true,
@@ -143,12 +178,14 @@ export const listBills = createServerFn({ method: 'GET' })
       },
       orderBy: [{ fecha: 'desc' }, { fv: 'desc' }],
     })
-    return bills
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return bills.map((b) => serializeBill(b as unknown as Record<string, unknown>)) as any
   })
 
 export const createBill = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
+      userId: string
       clienteId: string
       fv: number
       ciudadId: string
@@ -169,67 +206,84 @@ export const createBill = createServerFn({ method: 'POST' })
     const valor = Number(data.valor)
     const devo = toNum(data.devo)
     const abono = toNum(data.abono)
-    const iva = toNum(data.iva)
     const pct = data.porcentajeComision ?? 0.05
-    const { vSinIva, vComi } = computeBillFields(valor, devo, abono, iva, pct)
+    const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
     const fecha = data.fecha ? new Date(data.fecha) : new Date()
-    return db.bill.create({
-      data: {
-        clienteId: data.clienteId,
-        ciudadId: data.ciudadId,
-        vendedorId: data.vendedorId,
-        fv: data.fv,
-        fecha,
-        valor,
-        devo,
-        abono,
-        reteFuente: toNum(data.reteFuente),
-        iva,
-        vSinIva,
-        vComi,
-        porcentajeComision: pct,
-        flete: toNum(data.flete),
-        comentarios: data.comentarios?.trim() || null,
-      },
-      include: { cliente: true, ciudad: true, vendedor: true },
-    })
+    try {
+      const bill = await db.bill.create({
+        data: {
+          userId: data.userId,
+          clienteId: data.clienteId,
+          ciudadId: data.ciudadId,
+          vendedorId: data.vendedorId,
+          fv: data.fv,
+          fecha,
+          valor,
+          devo,
+          abono,
+          reteFuente: toNum(data.reteFuente),
+          iva,
+          vSinIva,
+          vComi,
+          porcentajeComision: pct,
+          flete: toNum(data.flete),
+          comentarios: data.comentarios?.trim() || null,
+        },
+        include: { cliente: true, ciudad: true, vendedor: true },
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { ok: true as const, bill: serializeBill(bill as unknown as Record<string, unknown>) } as any
+    } catch (err: unknown) {
+      const prisma = err as { code?: string }
+      if (prisma?.code === 'P2002') {
+        return {
+          ok: false as const,
+          error:
+            'Ya existe una factura con este número (FV) para este cliente. Use otro número de factura.',
+        }
+      }
+      throw err
+    }
   })
 
 export const updateBill = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: {
+      userId: string
       id: string
       devo?: number | null
       abono?: number | null
       reteFuente?: number | null
-      iva?: number | null
       flete?: number | null
       comentarios?: string | null
+      fecha?: string
     }) => data
   )
   .handler(async (ctx) => {
-    const { id, ...rest } = ctx.data
-    const existing = await db.bill.findUniqueOrThrow({ where: { id } })
+    const { id, userId, ...rest } = ctx.data
+    const existing = await db.bill.findFirstOrThrow({ where: { id, userId } })
     const valor = Number(existing.valor)
     const devo = rest.devo !== undefined ? toNum(rest.devo) : Number(existing.devo ?? 0)
     const abono = rest.abono !== undefined ? toNum(rest.abono) : Number(existing.abono ?? 0)
-    const iva = rest.iva !== undefined ? toNum(rest.iva) : Number(existing.iva ?? 0)
     const pct = Number(existing.porcentajeComision)
-    const { vSinIva, vComi } = computeBillFields(valor, devo, abono, iva, pct)
-    return db.bill.update({
+    const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
+    const updated = await db.bill.update({
       where: { id },
       data: {
         ...(rest.devo !== undefined && { devo: rest.devo }),
         ...(rest.abono !== undefined && { abono: rest.abono }),
         ...(rest.reteFuente !== undefined && { reteFuente: toNum(rest.reteFuente) }),
-        ...(rest.iva !== undefined && { iva: rest.iva }),
         ...(rest.flete !== undefined && { flete: rest.flete }),
         ...(rest.comentarios !== undefined && { comentarios: rest.comentarios?.trim() || null }),
+        ...(rest.fecha && { fecha: new Date(rest.fecha) }),
+        iva,
         vSinIva,
         vComi,
       },
       include: { cliente: true, ciudad: true, vendedor: true },
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return serializeBill(updated as unknown as Record<string, unknown>) as any
   })
 
 // --- Bill payments (multi-abonos)
@@ -242,14 +296,14 @@ async function recomputeBillAbono(billId: string) {
   const totalAbono = bill.payments.reduce((sum, p) => sum + Number(p.amount), 0)
   const valor = Number(bill.valor)
   const devo = Number(bill.devo ?? 0)
-  const iva = Number(bill.iva ?? 0)
   const pct = Number(bill.porcentajeComision)
-  const { vSinIva, vComi } = computeBillFields(valor, devo, totalAbono, iva, pct)
+  const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
 
   return db.bill.update({
     where: { id: billId },
     data: {
       abono: totalAbono || null,
+      iva,
       vSinIva,
       vComi,
     },
@@ -258,15 +312,16 @@ async function recomputeBillAbono(billId: string) {
 }
 
 export const listBillPayments = createServerFn({ method: 'GET' })
-  .inputValidator((billId: string) => billId)
+  .inputValidator((data: { billId: string }) => data)
   .handler(async (ctx) => {
-    const billId = ctx.data
+    const billId = ctx.data.billId
     const payments = await db.billPayment.findMany({
       where: { billId },
       orderBy: { paidAt: 'asc' },
     })
     const total = payments.reduce((s, p) => s + Number(p.amount), 0)
-    return { payments, total }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { payments: payments.map((p) => serializePayment(p as unknown as Record<string, unknown>)), total } as any
   })
 
 export const addBillPayment = createServerFn({ method: 'POST' })
@@ -288,7 +343,8 @@ export const addBillPayment = createServerFn({ method: 'POST' })
       },
     })
     const updatedBill = await recomputeBillAbono(billId)
-    return updatedBill
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return serializeBill(updatedBill as unknown as Record<string, unknown>) as any
   })
 
 export const deleteBillPayment = createServerFn({ method: 'POST' })
@@ -300,29 +356,29 @@ export const deleteBillPayment = createServerFn({ method: 'POST' })
     })
     await db.billPayment.delete({ where: { id: paymentId } })
     const updatedBill = await recomputeBillAbono(existing.billId)
-    return updatedBill
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return serializeBill(updatedBill as unknown as Record<string, unknown>) as any
   })
 
 // --- Liquidar / Settlements
 export const liquidarFactura = createServerFn({ method: 'POST' })
-  .inputValidator((billId: string) => billId)
+  .inputValidator((data: { userId: string; billId: string }) => data)
   .handler(async (ctx) => {
-    const billId = ctx.data
-    const bill = await db.bill.findUniqueOrThrow({
-      where: { id: billId },
-      include: { vendedor: true },
-    })
+    const { userId, billId } = ctx.data
+    const bill = await db.bill.findFirstOrThrow({ where: { id: billId, userId }, include: { vendedor: true } })
     if (bill.estado === 'LIQUIDADA') {
       return { ok: false, message: 'Factura ya está liquidada' }
     }
     const now = new Date()
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     let settlement = await db.monthlySettlement.findUnique({
-      where: { vendedorId_month: { vendedorId: bill.vendedorId, month: monthKey } },
+      where: {
+        vendedorId_month: { vendedorId: bill.vendedorId, month: monthKey },
+      },
     })
     if (!settlement) {
       settlement = await db.monthlySettlement.create({
-        data: { vendedorId: bill.vendedorId, month: monthKey },
+        data: { userId, vendedorId: bill.vendedorId, month: monthKey },
       })
     }
     await db.bill.update({
@@ -333,9 +389,9 @@ export const liquidarFactura = createServerFn({ method: 'POST' })
   })
 
 export const removeBillFromSettlement = createServerFn({ method: 'POST' })
-  .inputValidator((billId: string) => billId)
+  .inputValidator((data: { userId: string; billId: string }) => data)
   .handler(async (ctx) => {
-    const billId = ctx.data
+    const { userId, billId } = ctx.data
     await db.bill.update({
       where: { id: billId },
       data: { estado: 'PENDIENTE', liquidatedAt: null, settlementId: null },
@@ -345,11 +401,11 @@ export const removeBillFromSettlement = createServerFn({ method: 'POST' })
 
 // --- Monthly settlements (list by vendedor, get one month)
 export const listSettlementsByVendedor = createServerFn({ method: 'GET' })
-  .inputValidator((vendedorId: string) => vendedorId)
+  .inputValidator((data: { userId: string; vendedorId: string }) => data)
   .handler(async (ctx) => {
-    const vendedorId = ctx.data
-    return db.monthlySettlement.findMany({
-      where: { vendedorId },
+    const { userId, vendedorId } = ctx.data
+    const settlements = await db.monthlySettlement.findMany({
+      where: { userId, vendedorId },
       include: {
         vendedor: true,
         bills: {
@@ -358,14 +414,19 @@ export const listSettlementsByVendedor = createServerFn({ method: 'GET' })
       },
       orderBy: { month: 'desc' },
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return settlements.map((s) => ({
+      ...s,
+      bills: (s.bills as unknown as Record<string, unknown>[]).map((b) => serializeBill(b)),
+    })) as any
   })
 
 export const getSettlement = createServerFn({ method: 'GET' })
-  .inputValidator((id: string) => id)
+  .inputValidator((data: { userId: string; id: string }) => data)
   .handler(async (ctx) => {
-    const id = ctx.data
-    return db.monthlySettlement.findUniqueOrThrow({
-      where: { id },
+    const { userId, id } = ctx.data
+    const settlement = await db.monthlySettlement.findFirstOrThrow({
+      where: { id, userId },
       include: {
         vendedor: true,
         bills: {
@@ -373,12 +434,17 @@ export const getSettlement = createServerFn({ method: 'GET' })
         },
       },
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return {
+      ...settlement,
+      bills: (settlement.bills as unknown as Record<string, unknown>[]).map((b) => serializeBill(b)),
+    } as any
   })
 
 // --- Report: account statement (cliente + date range)
 export const getAccountStatement = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { clienteId: string; desde: string; hasta: string }) => data
+    (data: { userId: string; clienteId: string; desde: string; hasta: string }) => data
   )
   .handler(async (ctx) => {
     const data = ctx.data
@@ -386,6 +452,7 @@ export const getAccountStatement = createServerFn({ method: 'GET' })
     const hasta = new Date(data.hasta)
     const bills = await db.bill.findMany({
       where: {
+        userId: data.userId,
         clienteId: data.clienteId,
         fecha: { gte: desde, lte: hasta },
       },
@@ -396,5 +463,6 @@ export const getAccountStatement = createServerFn({ method: 'GET' })
       where: { id: data.clienteId },
       include: { ciudad: true },
     })
-    return { cliente, bills }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { cliente, bills: bills.map((b) => serializeBill(b as unknown as Record<string, unknown>)) } as any
   })

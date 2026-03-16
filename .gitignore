@@ -11,5 +11,6 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+hash-password.mjs
 
 /generated/prisma

@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { signIn, type AuthUser } from '../server/auth'
+import { signIn, signUp as signUpServer, type AuthUser } from '../server/auth'
 
 const STORAGE_KEY = 'cartera:user'
 
 type AuthContextValue = {
   user: AuthUser | null
   loading: boolean
-  signIn: (email: string) => Promise<AuthUser | null>
+  signIn: (email: string, password: string) => Promise<AuthUser | null>
+  signUp: (email: string, password: string, name?: string | null) => Promise<AuthUser | null>
   signOut: () => void
 }
 
@@ -37,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signInMutation = useMutation({
-    mutationFn: async (email: string) => {
-      const result = await signIn({ data: { email } })
+    mutationFn: async (vars: { email: string; password: string }) => {
+      const result = await signIn({ data: { email: vars.email, password: vars.password } })
       return result
     },
     onSuccess: (result) => {
@@ -53,8 +54,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   })
 
-  const handleSignIn = async (email: string) => {
-    const result = await signInMutation.mutateAsync(email)
+  const handleSignIn = async (email: string, password: string) => {
+    const result = await signInMutation.mutateAsync({ email, password })
+    return result ?? null
+  }
+
+  const signUpMutation = useMutation({
+    mutationFn: async (vars: { email: string; password: string; name?: string | null }) => {
+      const result = await signUpServer({
+        data: { email: vars.email, password: vars.password, name: vars.name ?? undefined },
+      })
+      return result
+    },
+    onSuccess: (result) => {
+      if (result) {
+        setUser(result)
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(result))
+        } catch {
+          // ignore storage errors
+        }
+      }
+    },
+  })
+
+  const handleSignUp = async (email: string, password: string, name?: string | null) => {
+    const result = await signUpMutation.mutateAsync({ email, password, name })
     return result ?? null
   }
 
@@ -73,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       loading,
       signIn: handleSignIn,
+      signUp: handleSignUp,
       signOut,
     }),
     [user, loading],

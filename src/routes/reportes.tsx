@@ -48,11 +48,12 @@ function ReportesPage() {
   })
 
   const { data: statement, isLoading } = useQuery({
-    queryKey: ['accountStatement', request?.clienteId, request?.desde, request?.hasta],
+    queryKey: ['accountStatement', user.id, request?.clienteId, request?.desde, request?.hasta],
     queryFn: () =>
       request
         ? getAccountStatement({
             data: {
+              userId: user.id,
               clienteId: request.clienteId,
               desde: request.desde,
               hasta: request.hasta,
