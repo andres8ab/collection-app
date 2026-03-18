@@ -21,6 +21,12 @@ function serializeBill<T extends Record<string, unknown>>(bill: T): T {
   out.devo = decimalToNumber(b.devo)
   out.abono = decimalToNumber(b.abono)
   out.reteFuente = decimalToNumber(b.reteFuente)
+  out.descuentos = Array.isArray(b.descuentos)
+    ? (b.descuentos as Record<string, unknown>[]).map((d) => ({
+        ...d,
+        amount: Number(decimalToNumber((d as Record<string, unknown>).amount) ?? 0),
+      }))
+    : out.descuentos
   out.iva = decimalToNumber(b.iva)
   out.vSinIva = decimalToNumber(b.vSinIva)
   out.vComi = decimalToNumber(b.vComi)
@@ -37,6 +43,13 @@ function serializeBill<T extends Record<string, unknown>>(bill: T): T {
 
 function serializePayment<T extends Record<string, unknown>>(p: T): T {
   return { ...p, amount: Number(decimalToNumber((p as Record<string, unknown>).amount) ?? 0) } as T
+}
+
+function serializeDescuento<T extends Record<string, unknown>>(d: T): T {
+  return {
+    ...d,
+    amount: Number(decimalToNumber((d as Record<string, unknown>).amount) ?? 0),
+  } as T
 }
 
 // --- Ciudades
@@ -84,15 +97,27 @@ export const listClientes = createServerFn({ method: 'GET' })
 
 export const createCliente = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { nombre: string; nit?: string; direccion?: string; ciudadId: string }) =>
+    (data: { nombre: string; nit: string; direccion?: string; ciudadId: string }) =>
       data
   )
   .handler(async (ctx) => {
     const data = ctx.data
+    const nit = data.nit.trim()
+    if (!nit) {
+      throw new Error('El NIT es requerido')
+    }
+
+    // Validate uniqueness by NIT: if it exists, return it (so the UI selects it).
+    const existing = await db.cliente.findUnique({
+      where: { nit },
+      include: { ciudad: true },
+    })
+    if (existing) return existing
+
     return db.cliente.create({
       data: {
         nombre: data.nombre.trim(),
-        nit: data.nit?.trim() || null,
+        nit,
         direccion: data.direccion?.trim() || null,
         ciudadId: data.ciudadId,
       },
@@ -175,6 +200,7 @@ export const listBills = createServerFn({ method: 'POST' })
         vendedor: true,
         settlement: true,
         payments: true,
+        descuentos: true,
       },
       orderBy: [{ fecha: 'desc' }, { fv: 'desc' }],
     })
@@ -356,6 +382,71 @@ export const deleteBillPayment = createServerFn({ method: 'POST' })
     })
     await db.billPayment.delete({ where: { id: paymentId } })
     const updatedBill = await recomputeBillAbono(existing.billId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return serializeBill(updatedBill as unknown as Record<string, unknown>) as any
+  })
+
+// --- Bill descuentos (conceptual discounts)
+export const listBillDescuentos = createServerFn({ method: 'GET' })
+  .inputValidator((data: { billId: string }) => data)
+  .handler(async (ctx) => {
+    const billId = ctx.data.billId
+    const descuentos = await db.billDescuento.findMany({
+      where: { billId },
+      orderBy: { createdAt: 'asc' },
+    })
+    const total = descuentos.reduce((s, d) => s + Number(d.amount), 0)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return {
+      descuentos: descuentos.map((d) => serializeDescuento(d as unknown as Record<string, unknown>)),
+      total,
+    } as any
+  })
+
+export const addBillDescuento = createServerFn({ method: 'POST' })
+  .inputValidator((data: { billId: string; amount: number; concepto: string }) => data)
+  .handler(async (ctx) => {
+    const { billId, amount, concepto } = ctx.data
+    const cleanAmount = Number(amount)
+    const cleanConcepto = concepto.trim()
+    if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
+      throw new Error('Monto inválido')
+    }
+    if (!cleanConcepto) {
+      throw new Error('Concepto requerido')
+    }
+
+    await db.billDescuento.create({
+      data: {
+        billId,
+        amount: cleanAmount,
+        concepto: cleanConcepto,
+      },
+    })
+
+    const updatedBill = await db.bill.findUniqueOrThrow({
+      where: { id: billId },
+      include: { descuentos: true },
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return serializeBill(updatedBill as unknown as Record<string, unknown>) as any
+  })
+
+export const deleteBillDescuento = createServerFn({ method: 'POST' })
+  .inputValidator((data: { descuentoId: string }) => data)
+  .handler(async (ctx) => {
+    const { descuentoId } = ctx.data
+    const existing = await db.billDescuento.findUniqueOrThrow({
+      where: { id: descuentoId },
+    })
+    await db.billDescuento.delete({ where: { id: descuentoId } })
+
+    const updatedBill = await db.bill.findUniqueOrThrow({
+      where: { id: existing.billId },
+      include: { descuentos: true },
+    })
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return serializeBill(updatedBill as unknown as Record<string, unknown>) as any
   })

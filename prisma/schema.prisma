@@ -24,7 +24,7 @@ model Ciudad {
 model Cliente {
   id        String   @id @default(cuid())
   nombre    String
-  nit       String?
+  nit       String   @unique
   direccion String?
   ciudadId  String
   createdAt DateTime @default(now())
@@ -53,6 +53,7 @@ model Bill {
   devo               Decimal?  @db.Decimal(14, 2) // Devolución
   abono              Decimal?  @db.Decimal(14, 2) // Abono
   reteFuente         Decimal?  @db.Decimal(14, 2)
+  descuentos         BillDescuento[]
   iva                Decimal?  @db.Decimal(14, 2)
   vSinIva            Decimal?  @db.Decimal(14, 2) // Valor sin IVA (calculated, stored for reports)
   porcentajeComision Decimal   @default(0.05) @db.Decimal(5, 4)
@@ -81,6 +82,19 @@ model Bill {
   @@index([vendedorId, estado])
   @@index([clienteId, fecha])
   @@index([settlementId])
+}
+
+model BillDescuento {
+  id        String   @id @default(cuid())
+  billId    String
+  amount    Decimal  @db.Decimal(14, 2)
+  concepto  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
 }
 
 model BillPayment {

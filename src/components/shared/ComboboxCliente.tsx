@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ComboboxCiudad } from './ComboboxCiudad'
 import type { Ciudad } from './ComboboxCiudad'
 
-type Cliente = { id: string; nombre: string; nit: string | null; direccion: string | null; ciudad: Ciudad }
+type Cliente = { id: string; nombre: string; nit: string; direccion: string | null; ciudad: Ciudad }
 
 export function ComboboxCliente({
   options,
@@ -18,7 +18,7 @@ export function ComboboxCliente({
   ciudades: Ciudad[]
   value: string
   onChange: (id: string, c: Cliente) => void
-  onCreate: (data: { nombre: string; nit?: string; direccion?: string; ciudadId: string }) => Promise<Cliente>
+  onCreate: (data: { nombre: string; nit: string; direccion?: string; ciudadId: string }) => Promise<Cliente>
   onCreateCiudad: (nombre: string) => Promise<Ciudad>
   placeholder?: string
   disabled?: boolean
@@ -38,7 +38,7 @@ export function ComboboxCliente({
     ? options.filter(
         (c) =>
           c.nombre.toLowerCase().includes(filter.toLowerCase()) ||
-          (c.nit ?? '').toLowerCase().includes(filter.toLowerCase())
+          c.nit.toLowerCase().includes(filter.toLowerCase())
       )
     : options
 
@@ -55,12 +55,13 @@ export function ComboboxCliente({
 
   async function handleAdd() {
     const nombre = addNombre.trim()
-    if (!nombre || !addCiudadId) return
+    const nit = addNit.trim()
+    if (!nombre || !nit || !addCiudadId) return
     setAdding(true)
     try {
       const created = await onCreate({
         nombre,
-        nit: addNit.trim() || undefined,
+        nit,
         direccion: addDireccion.trim() || undefined,
         ciudadId: addCiudadId,
       })
@@ -117,7 +118,7 @@ export function ComboboxCliente({
                 type="text"
                 value={addNit}
                 onChange={(e) => setAddNit(e.target.value)}
-                placeholder="NIT"
+                placeholder="NIT *"
                 className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-sm"
               />
               <input
@@ -145,7 +146,7 @@ export function ComboboxCliente({
                 </button>
                 <button
                   type="button"
-                  disabled={adding || !addNombre.trim() || !addCiudadId}
+                  disabled={adding || !addNombre.trim() || !addNit.trim() || !addCiudadId}
                   onClick={handleAdd}
                   className="rounded-lg bg-[var(--lagoon)] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >

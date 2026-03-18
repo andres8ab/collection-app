@@ -7,6 +7,9 @@ import {
   listBillPayments,
   addBillPayment,
   deleteBillPayment,
+  listBillDescuentos,
+  addBillDescuento,
+  deleteBillDescuento,
 } from "../../server/cartera";
 import { fmtMoney, fmtNum, getMesLabel, toDecimalValue } from "../../lib/utils";
 import { Filter, Search } from "lucide-react";
@@ -21,6 +24,12 @@ type BillWithRelations = {
   iva: { toString(): string } | null;
   vSinIva: { toString(): string } | null;
   vComi: { toString(): string } | null;
+  descuentos?: {
+    id: string;
+    amount: { toString(): string } | number;
+    concepto: string;
+    createdAt: Date;
+  }[];
   comentarios: string | null;
   estado: "PENDIENTE" | "LIQUIDADA";
   cliente: { id: string; nombre: string };
@@ -45,6 +54,7 @@ const COLS: {
   { key: "valor", label: "Valor", money: true },
   { key: "devo", label: "Devo.", money: true },
   { key: "abono", label: "Abono", money: true },
+  { key: "descuentos", label: "Descuentos", money: true },
   { key: "saldo", label: "Saldo", money: true },
   { key: "reteFuente", label: "Rete Fuente", money: true },
   { key: "iva", label: "IVA", money: true },
@@ -62,7 +72,25 @@ function getSaldo(b: BillWithRelations): number {
   const v = toDecimalValue(b.valor);
   const d = toDecimalValue(b.devo);
   const a = toDecimalValue(b.abono);
-  return v - d - a;
+  const rf = toDecimalValue(b.reteFuente);
+  const desc = getDescuentoTotal(b);
+  return v - d - a - rf - desc;
+}
+
+function getDescuentoTotal(b: BillWithRelations): number {
+  if (!b.descuentos || b.descuentos.length === 0) return 0;
+  return b.descuentos.reduce((sum, d) => sum + toDecimalValue(d.amount), 0);
+}
+
+function computeReteFuenteFromBill(b: BillWithRelations): number {
+  const valor = toDecimalValue(b.valor);
+  const iva = toDecimalValue(b.iva);
+  const base = valor - iva;
+  // reteFuente = (valor - iva) * 2.5%
+  const raw = base * 0.025;
+  const capped = raw > 0 ? raw : 0;
+  // DB Decimal(14,2): keep 2 decimals.
+  return Math.round(capped * 100) / 100;
 }
 
 function getAbonoTotal(b: BillWithRelations): number {
@@ -393,6 +421,7 @@ export function BillsTable({ userId }: { userId: string }) {
   const [editComentarios, setEditComentarios] = useState("");
   const [editFecha, setEditFecha] = useState("");
   const [paymentsBillId, setPaymentsBillId] = useState<string | null>(null);
+  const [descuentosBillId, setDescuentosBillId] = useState<string | null>(null);
 
   // Column filters (Excel-style)
   const [filterVendedorIds, setFilterVendedorIds] = useState<string[]>([]);
@@ -458,6 +487,7 @@ export function BillsTable({ userId }: { userId: string }) {
       id: string;
       devo?: number | null;
       abono?: number | null;
+      reteFuente?: number | null;
       comentarios?: string | null;
       fecha?: string;
     }) => updateBill({ data: { ...data, userId } }),
@@ -621,6 +651,67 @@ export function BillsTable({ userId }: { userId: string }) {
                             : "Agregar"}
                         </span>
                       </button>
+                    ) : col.key === "descuentos" ? (
+                      <button
+                        type="button"
+                        onClick={() => setDescuentosBillId(b.id)}
+                        className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 text-xs font-medium text-[var(--sea-ink)] hover:border-[var(--lagoon-deep)] hover:bg-[var(--link-bg-hover)]"
+                      >
+                        <span>{fmtMoney(getDescuentoTotal(b))}</span>
+                        <span className="text-[0.7rem] text-[var(--sea-ink-soft)]">
+                          {b.descuentos && b.descuentos.length > 0
+                            ? `${b.descuentos.length} descuento${b.descuentos.length !== 1 ? "s" : ""}`
+                            : "Agregar"}
+                        </span>
+                      </button>
+                    ) : col.key === "reteFuente" ? (
+                      (() => {
+                        const rf = toDecimalValue(b.reteFuente);
+                        if (rf > 0) {
+                          return (
+                            <div className="inline-flex items-center gap-2">
+                              <span>{fmtMoney(rf)}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateBillMutation.mutate({
+                                    id: b.id,
+                                    reteFuente: 0,
+                                  })
+                                }
+                                disabled={
+                                  updateBillMutation.isPending ||
+                                  b.estado !== "PENDIENTE"
+                                }
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-red-300 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                                title="Quitar reteFuente y volver a 0"
+                              >
+                                X
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        const computed = computeReteFuenteFromBill(b);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBillMutation.mutate({
+                                id: b.id,
+                                reteFuente: computed,
+                              })
+                            }
+                            disabled={
+                              updateBillMutation.isPending || b.estado !== "PENDIENTE"
+                            }
+                            className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 text-xs font-medium text-[var(--sea-ink)] hover:border-[var(--lagoon-deep)] hover:bg-[var(--link-bg-hover)] disabled:opacity-50"
+                            title="Calcular reteFuente y aplicarlo a saldo"
+                          >
+                            + retefte
+                          </button>
+                        );
+                      })()
                     ) : col.key === "estado" ? (
                       <span
                         className={
@@ -708,6 +799,12 @@ export function BillsTable({ userId }: { userId: string }) {
         <BillPaymentsModal
           bill={bills.find((b) => b.id === paymentsBillId)!}
           onClose={() => setPaymentsBillId(null)}
+        />
+      )}
+      {descuentosBillId && (
+        <BillDescuentosModal
+          bill={bills.find((b) => b.id === descuentosBillId)!}
+          onClose={() => setDescuentosBillId(null)}
         />
       )}
     </div>
@@ -869,6 +966,192 @@ function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
                           <button
                             type="button"
                             onClick={() => deleteMutation.mutate(p.id)}
+                            disabled={deleteMutation.isPending}
+                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-[var(--line)] font-semibold">
+                    <td className="px-3 py-2 text-right">Total</td>
+                    <td className="px-3 py-2 text-right text-emerald-600">
+                      {fmtMoney(total)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type BillDescuentosModalProps = {
+  bill: BillWithRelations;
+  onClose: () => void;
+};
+
+function BillDescuentosModal({ bill, onClose }: BillDescuentosModalProps) {
+  const queryClient = useQueryClient();
+  const [amount, setAmount] = useState("");
+  const [concepto, setConcepto] = useState("");
+
+  const { data } = useQuery({
+    queryKey: ["billDescuentos", bill.id],
+    queryFn: () => listBillDescuentos({ data: { billId: bill.id } }),
+  });
+
+  const descuentos = data?.descuentos ?? bill.descuentos ?? [];
+  const total = useMemo(
+    () =>
+      descuentos.reduce(
+        (sum: number, d: { amount: { toString(): string } | number }) =>
+          sum + toDecimalValue(d.amount),
+        0,
+      ),
+    [descuentos],
+  );
+
+  const addMutation = useMutation({
+    mutationFn: (payload: { amount: number; concepto: string }) =>
+      addBillDescuento({
+        data: {
+          billId: bill.id,
+          amount: payload.amount,
+          concepto: payload.concepto,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billDescuentos", bill.id] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      setAmount("");
+      setConcepto("");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (descuentoId: string) =>
+      deleteBillDescuento({ data: { descuentoId } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billDescuentos", bill.id] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = amount.trim().replace(/,/g, "");
+    const num = parseFloat(value);
+    const cleanConcepto = concepto.trim();
+    if (!value || Number.isNaN(num) || num <= 0) return;
+    if (!cleanConcepto) return;
+    addMutation.mutate({ amount: num, concepto: cleanConcepto });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
+      <div className="island-shell max-h-[90vh] w-full max-w-lg overflow-hidden rounded-t-2xl bg-[var(--surface-strong)] pb-[env(safe-area-inset-bottom)] sm:rounded-2xl sm:pb-0">
+        <div className="flex items-start justify-between gap-2 border-b border-[var(--line)] px-4 py-3 sm:px-5 sm:py-4">
+          <div>
+            <p className="island-kicker mb-1">Descuentos</p>
+            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl">
+              FV {bill.fv} · {bill.cliente?.nombre ?? ""}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-[var(--line)] px-2 py-1 text-xs text-[var(--sea-ink-soft)] hover:bg-[var(--link-bg-hover)]"
+          >
+            Cerrar
+          </button>
+        </div>
+
+        <div className="space-y-4 px-4 py-3 sm:px-5 sm:py-4">
+          <form
+            onSubmit={handleAdd}
+            className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium text-[var(--sea-ink-soft)]">
+                Monto
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-32 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm"
+                placeholder="0,00"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-[var(--sea-ink-soft)]">
+                Concepto
+              </label>
+              <input
+                type="text"
+                value={concepto}
+                onChange={(e) => setConcepto(e.target.value)}
+                className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm"
+                placeholder="Ej: descuento por pronto pago"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={addMutation.isPending}
+              className="mt-1 inline-flex items-center justify-center rounded-xl bg-[var(--lagoon)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+            >
+              Agregar descuento
+            </button>
+          </form>
+
+          <div className="max-h-64 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+            {descuentos.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-[var(--sea-ink-soft)]">
+                No hay descuentos registrados para esta factura.
+              </div>
+            ) : (
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
+                      Concepto
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
+                      Monto
+                    </th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
+                      Eliminar
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {descuentos.map(
+                    (d: {
+                      id: string;
+                      concepto: string;
+                      amount: { toString(): string } | number;
+                    }) => (
+                      <tr key={d.id} className="border-b border-[var(--line)]">
+                        <td className="px-3 py-2">
+                          <span className="truncate">{d.concepto}</span>
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {fmtMoney(toDecimalValue(d.amount))}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(d.id)}
                             disabled={deleteMutation.isPending}
                             className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
                           >

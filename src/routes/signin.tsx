@@ -102,16 +102,18 @@ function SignInPage() {
           >
             {submitting ? "Verificando..." : "Entrar"}
           </button>
-          {/* <p className="mt-4 text-center text-sm text-[var(--sea-ink-soft)]">
-            ¿No tienes cuenta?{' '}
+          <p className="mt-4 text-center text-sm text-[var(--sea-ink-soft)]">
+            ¿No tienes cuenta?{" "}
             <Link
               to="/signup"
-              search={search.redirect ? { redirect: search.redirect } : undefined}
+              search={
+                search.redirect ? { redirect: search.redirect } : undefined
+              }
               className="font-semibold text-[var(--lagoon)] underline hover:no-underline"
             >
               Crear cuenta
             </Link>
-          </p> */}
+          </p>
         </form>
       </section>
     </main>
