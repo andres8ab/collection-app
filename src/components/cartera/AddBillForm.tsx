@@ -20,7 +20,8 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
   const [vendedorId, setVendedorId] = useState('')
   const [fv, setFv] = useState('')
   const [valor, setValor] = useState('')
-   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
+  const [conditioned, setConditioned] = useState(false)
   const [open, setOpen] = useState(false)
 
   const { data: ciudades = [] } = useQuery({
@@ -45,6 +46,7 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
       vendedorId: string
       valor: number
       fecha: string
+      conditioned: boolean
     }) => {
       const result = (await createBill({ data })) as
         | { ok: true; bill: unknown }
@@ -62,6 +64,7 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
       setFv('')
       setValor('')
       setFecha(new Date().toISOString().slice(0, 10))
+      setConditioned(false)
       setOpen(false)
       onSuccess?.()
     },
@@ -82,6 +85,7 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
       vendedorId,
       valor: valorNum,
       fecha,
+      conditioned,
     })
   }
 
@@ -181,6 +185,17 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
             className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
             required
           />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--sea-ink)]">
+            <input
+              type="checkbox"
+              checked={conditioned}
+              onChange={(e) => setConditioned(e.target.checked)}
+              className="h-4 w-4 rounded border border-[var(--line)]"
+            />
+            <span>Factura condicionada (caso especial)</span>
+          </label>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">

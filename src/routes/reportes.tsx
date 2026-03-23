@@ -2,17 +2,24 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listClientes, getAccountStatement } from '../server/cartera'
-import { fmtMoney } from '../lib/utils'
+import { fmtMoney, getBillSaldo, toDecimalValue } from '../lib/utils'
 import { useAuth } from '../lib/auth'
+
+type ReportBill = {
+  id: string
+  fecha: Date | string
+  fv: number
+  valor: { toString(): string } | number | null
+  abono: { toString(): string } | number | null
+  reteFuente?: { toString(): string } | number | null
+  descuentos?: Array<{ amount: { toString(): string } | number | null }>
+  estado: 'PENDIENTE' | 'LIQUIDADA'
+  ciudad?: { nombre?: string | null } | null
+}
 
 export const Route = createFileRoute('/reportes')({
   component: ReportesPage,
 })
-
-function toNum(d: { toString(): string } | null | undefined): number {
-  if (d == null) return 0
-  return parseFloat(d.toString())
-}
 
 function ReportesPage() {
   const { user, loading } = useAuth()
@@ -70,12 +77,10 @@ function ReportesPage() {
     }
   }
 
-  const totalValor = statement?.bills.reduce((s, b) => s + toNum(b.valor), 0) ?? 0
-  const totalAbono = statement?.bills.reduce((s, b) => s + toNum(b.abono), 0) ?? 0
-  const totalSaldo = statement?.bills.reduce(
-    (s, b) => s + toNum(b.valor) - toNum(b.devo) - toNum(b.abono),
-    0
-  ) ?? 0
+  const bills = (statement?.bills ?? []) as ReportBill[]
+  const totalValor = bills.reduce((s, b) => s + toDecimalValue(b.valor), 0)
+  const totalAbono = bills.reduce((s, b) => s + toDecimalValue(b.abono), 0)
+  const totalSaldo = bills.reduce((s, b) => s + getBillSaldo(b), 0)
 
   return (
     <main className="page-wrap px-3 pb-8 pt-10 sm:px-4 sm:pt-14">
@@ -196,9 +201,6 @@ function ReportesPage() {
                     Valor
                   </th>
                   <th className="px-3 py-2 text-right font-semibold uppercase text-[var(--sea-ink-soft)]">
-                    Devo.
-                  </th>
-                  <th className="px-3 py-2 text-right font-semibold uppercase text-[var(--sea-ink-soft)]">
                     Abono
                   </th>
                   <th className="px-3 py-2 text-right font-semibold uppercase text-[var(--sea-ink-soft)]">
@@ -210,8 +212,8 @@ function ReportesPage() {
                 </tr>
               </thead>
               <tbody>
-                {statement.bills.map((b) => {
-                  const saldo = toNum(b.valor) - toNum(b.devo) - toNum(b.abono)
+                {bills.map((b) => {
+                  const saldo = getBillSaldo(b)
                   return (
                     <tr key={b.id} className="border-b border-[var(--line)]">
                       <td className="px-3 py-2">
@@ -219,9 +221,8 @@ function ReportesPage() {
                       </td>
                       <td className="px-3 py-2">{b.fv}</td>
                       <td className="px-3 py-2">{b.ciudad?.nombre ?? '—'}</td>
-                      <td className="px-3 py-2 text-right">{fmtMoney(toNum(b.valor))}</td>
-                      <td className="px-3 py-2 text-right">{fmtMoney(toNum(b.devo))}</td>
-                      <td className="px-3 py-2 text-right">{fmtMoney(toNum(b.abono))}</td>
+                      <td className="px-3 py-2 text-right">{fmtMoney(toDecimalValue(b.valor))}</td>
+                      <td className="px-3 py-2 text-right">{fmtMoney(toDecimalValue(b.abono))}</td>
                       <td className="px-3 py-2 text-right">{fmtMoney(saldo)}</td>
                       <td className="px-3 py-2">
                         <span

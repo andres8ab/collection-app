@@ -18,7 +18,6 @@ function serializeBill<T extends Record<string, unknown>>(bill: T): T {
   const b = bill as Record<string, unknown>
   const out = { ...b } as Record<string, unknown>
   out.valor = Number(decimalToNumber(b.valor) ?? 0)
-  out.devo = decimalToNumber(b.devo)
   out.abono = decimalToNumber(b.abono)
   out.reteFuente = decimalToNumber(b.reteFuente)
   out.descuentos = Array.isArray(b.descuentos)
@@ -217,8 +216,8 @@ export const createBill = createServerFn({ method: 'POST' })
       ciudadId: string
       vendedorId: string
       valor: number
+      conditioned?: boolean
       fecha?: string
-      devo?: number | null
       abono?: number | null
       reteFuente?: number | null
       iva?: number | null
@@ -230,7 +229,6 @@ export const createBill = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const data = ctx.data
     const valor = Number(data.valor)
-    const devo = toNum(data.devo)
     const abono = toNum(data.abono)
     const pct = data.porcentajeComision ?? 0.05
     const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
@@ -245,7 +243,6 @@ export const createBill = createServerFn({ method: 'POST' })
           fv: data.fv,
           fecha,
           valor,
-          devo,
           abono,
           reteFuente: toNum(data.reteFuente),
           iva,
@@ -254,6 +251,7 @@ export const createBill = createServerFn({ method: 'POST' })
           porcentajeComision: pct,
           flete: toNum(data.flete),
           comentarios: data.comentarios?.trim() || null,
+          conditioned: data.conditioned ?? false,
         },
         include: { cliente: true, ciudad: true, vendedor: true },
       })
@@ -277,7 +275,8 @@ export const updateBill = createServerFn({ method: 'POST' })
     (data: {
       userId: string
       id: string
-      devo?: number | null
+      valor?: number
+      conditioned?: boolean
       abono?: number | null
       reteFuente?: number | null
       flete?: number | null
@@ -288,15 +287,14 @@ export const updateBill = createServerFn({ method: 'POST' })
   .handler(async (ctx) => {
     const { id, userId, ...rest } = ctx.data
     const existing = await db.bill.findFirstOrThrow({ where: { id, userId } })
-    const valor = Number(existing.valor)
-    const devo = rest.devo !== undefined ? toNum(rest.devo) : Number(existing.devo ?? 0)
-    const abono = rest.abono !== undefined ? toNum(rest.abono) : Number(existing.abono ?? 0)
+    const valor = rest.valor !== undefined ? Number(rest.valor) : Number(existing.valor)
     const pct = Number(existing.porcentajeComision)
     const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
     const updated = await db.bill.update({
       where: { id },
       data: {
-        ...(rest.devo !== undefined && { devo: rest.devo }),
+        ...(rest.valor !== undefined && { valor }),
+        ...(rest.conditioned !== undefined && { conditioned: rest.conditioned }),
         ...(rest.abono !== undefined && { abono: rest.abono }),
         ...(rest.reteFuente !== undefined && { reteFuente: toNum(rest.reteFuente) }),
         ...(rest.flete !== undefined && { flete: rest.flete }),
@@ -321,7 +319,6 @@ async function recomputeBillAbono(billId: string) {
 
   const totalAbono = bill.payments.reduce((sum, p) => sum + Number(p.amount), 0)
   const valor = Number(bill.valor)
-  const devo = Number(bill.devo ?? 0)
   const pct = Number(bill.porcentajeComision)
   const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
 
@@ -547,7 +544,7 @@ export const getAccountStatement = createServerFn({ method: 'GET' })
         clienteId: data.clienteId,
         fecha: { gte: desde, lte: hasta },
       },
-      include: { ciudad: true, vendedor: true },
+      include: { ciudad: true, vendedor: true, descuentos: true },
       orderBy: [{ fecha: 'asc' }, { fv: 'asc' }],
     })
     const cliente = await db.cliente.findUniqueOrThrow({

@@ -1,0 +1,1 @@
+ALTER TABLE "Bill" DROP COLUMN IF EXISTS "devo";

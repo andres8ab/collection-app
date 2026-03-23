@@ -50,7 +50,6 @@ model Bill {
   fv                 Int       // Número de factura
   fecha              DateTime  @db.Date
   valor              Decimal   @db.Decimal(14, 2)
-  devo               Decimal?  @db.Decimal(14, 2) // Devolución
   abono              Decimal?  @db.Decimal(14, 2) // Abono
   reteFuente         Decimal?  @db.Decimal(14, 2)
   descuentos         BillDescuento[]
@@ -60,6 +59,7 @@ model Bill {
   vComi              Decimal?  @db.Decimal(14, 2) // Valor comisión (calculated)
   flete              Decimal?  @db.Decimal(14, 2)
   comentarios        String?
+  conditioned        Boolean   @default(false)
   estado             BillEstado @default(PENDIENTE)
   liquidatedAt       DateTime? // When "liquidar" was pressed
   createdAt          DateTime  @default(now())

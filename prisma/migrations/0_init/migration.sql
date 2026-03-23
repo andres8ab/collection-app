@@ -44,7 +44,6 @@ CREATE TABLE "Bill" (
     "fv" INTEGER NOT NULL,
     "fecha" DATE NOT NULL,
     "valor" DECIMAL(14,2) NOT NULL,
-    "devo" DECIMAL(14,2),
     "abono" DECIMAL(14,2),
     "reteFuente" DECIMAL(14,2),
     "iva" DECIMAL(14,2),
