@@ -246,7 +246,7 @@ export function BillsMobileList(
           }`}
         >
           <Filter className="h-3 w-3" />
-          Cliente
+          Clien
         </button>
         <button
           type="button"
@@ -258,7 +258,7 @@ export function BillsMobileList(
           }`}
         >
           <Filter className="h-3 w-3" />
-          Vend.
+          Vend
         </button>
         <button
           type="button"
@@ -270,7 +270,7 @@ export function BillsMobileList(
           }`}
         >
           <Filter className="h-3 w-3" />
-          Ciudad
+          Ciud
         </button>
         <button
           type="button"
