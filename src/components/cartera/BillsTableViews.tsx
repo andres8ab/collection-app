@@ -235,7 +235,7 @@ export function BillsMobileList(
 
   return (
     <div className="space-y-2 md:hidden">
-      <div className="mb-2 flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-1">
         <button
           type="button"
           onClick={() => openMobileFilter("cliente")}
