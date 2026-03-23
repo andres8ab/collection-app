@@ -117,26 +117,32 @@ export function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
             ) : (
               <table className="w-full border-collapse text-sm">
                 <tbody>
-                  {payments.map((p) => (
-                    <tr key={p.id} className="border-b border-[var(--line)]">
-                      <td className="px-3 py-2">
-                        {new Date(p.paidAt).toLocaleDateString("es-CO")}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        {fmtMoney(toDecimalValue(p.amount))}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => deleteMutation.mutate(p.id)}
-                          disabled={deleteMutation.isPending}
-                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          Quitar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {payments.map(
+                    (p: {
+                      id: string;
+                      paidAt: Date;
+                      amount: { toString(): string };
+                    }) => (
+                      <tr key={p.id} className="border-b border-[var(--line)]">
+                        <td className="px-3 py-2">
+                          {new Date(p.paidAt).toLocaleDateString("es-CO")}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {fmtMoney(toDecimalValue(p.amount))}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(p.id)}
+                            disabled={deleteMutation.isPending}
+                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-[var(--line)] font-semibold">
@@ -268,24 +274,30 @@ export function BillDescuentosModal({
             ) : (
               <table className="w-full border-collapse text-sm">
                 <tbody>
-                  {descuentos.map((d) => (
-                    <tr key={d.id} className="border-b border-[var(--line)]">
-                      <td className="px-3 py-2">{d.concepto}</td>
-                      <td className="px-3 py-2 text-right">
-                        {fmtMoney(toDecimalValue(d.amount))}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => deleteMutation.mutate(d.id)}
-                          disabled={deleteMutation.isPending}
-                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          Quitar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {descuentos.map(
+                    (d: {
+                      id: string;
+                      concepto: string;
+                      amount: { toString(): string };
+                    }) => (
+                      <tr key={d.id} className="border-b border-[var(--line)]">
+                        <td className="px-3 py-2">{d.concepto}</td>
+                        <td className="px-3 py-2 text-right">
+                          {fmtMoney(toDecimalValue(d.amount))}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(d.id)}
+                            disabled={deleteMutation.isPending}
+                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-[var(--line)] font-semibold">

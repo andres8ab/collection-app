@@ -49,6 +49,6 @@ export const COLS: BillColumn[] = [
   { key: "estado", label: "Estado" },
 ];
 
-export const FILTERABLE_COLS = ["vendedor", "ciudad", "saldo"] as const;
+export const FILTERABLE_COLS = ["cliente", "vendedor", "ciudad", "saldo"] as const;
 
 export type FilterableCol = (typeof FILTERABLE_COLS)[number];

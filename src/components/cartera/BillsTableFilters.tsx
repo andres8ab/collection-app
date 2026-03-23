@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type ColumnFilterPopoverProps =
   | {
-      column: "vendedor" | "ciudad";
+      column: "cliente" | "vendedor" | "ciudad";
       options: { id: string; nombre: string }[];
       value: string[];
       onApply: (ids: string[]) => void;
@@ -198,7 +198,11 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
       className="absolute left-0 top-full z-50 mt-1 max-h-[320px] min-w-[240px] rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] p-3 shadow-lg"
     >
       <p className="mb-2 text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
-        {props.column === "vendedor" ? "Filtrar por vendedor" : "Filtrar por ciudad"}
+        {props.column === "vendedor"
+          ? "Filtrar por vendedor"
+          : props.column === "ciudad"
+            ? "Filtrar por ciudad"
+            : "Filtrar por cliente"}
       </p>
       {value.length > 0 && (
         <button
@@ -209,7 +213,12 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
           }}
           className="mb-2 text-xs text-[var(--lagoon)] hover:underline"
         >
-          Borrar filtro de {props.column === "vendedor" ? "Vendedor" : "Ciudad"}
+          Borrar filtro de{" "}
+          {props.column === "vendedor"
+            ? "Vendedor"
+            : props.column === "ciudad"
+              ? "Ciudad"
+              : "Cliente"}
         </button>
       )}
       <div className="relative mb-2">

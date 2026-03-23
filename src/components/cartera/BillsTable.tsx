@@ -15,10 +15,12 @@ export function BillsTable({ userId }: { userId: string }) {
   const [editValor, setEditValor] = useState("");
   const [paymentsBillId, setPaymentsBillId] = useState<string | null>(null);
   const [descuentosBillId, setDescuentosBillId] = useState<string | null>(null);
+  const [filterClienteIds, setFilterClienteIds] = useState<string[]>([]);
   const [filterVendedorIds, setFilterVendedorIds] = useState<string[]>([]);
   const [filterCiudadIds, setFilterCiudadIds] = useState<string[]>([]);
   const [filterSaldoMin, setFilterSaldoMin] = useState<number | null>(null);
   const [openFilter, setOpenFilter] = useState<FilterableCol | null>(null);
+  const clienteThRef = useRef<HTMLTableCellElement>(null);
   const vendedorThRef = useRef<HTMLTableCellElement>(null);
   const ciudadThRef = useRef<HTMLTableCellElement>(null);
   const saldoThRef = useRef<HTMLTableCellElement>(null);
@@ -38,6 +40,14 @@ export function BillsTable({ userId }: { userId: string }) {
       .sort((a, b) => (a.nombre ?? "").localeCompare(b.nombre ?? ""));
   }, [bills]);
 
+  const uniqueClientes = useMemo(() => {
+    const seen = new Set<string>();
+    return bills
+      .map((b) => b.cliente)
+      .filter((c) => c?.id && !seen.has(c.id) && (seen.add(c.id), true))
+      .sort((a, b) => (a.nombre ?? "").localeCompare(b.nombre ?? ""));
+  }, [bills]);
+
   const uniqueCiudades = useMemo(() => {
     const seen = new Set<string>();
     return bills
@@ -48,6 +58,9 @@ export function BillsTable({ userId }: { userId: string }) {
 
   const filteredBills = useMemo(() => {
     return bills.filter((b) => {
+      if (filterClienteIds.length > 0 && !b.cliente?.id) return false;
+      if (filterClienteIds.length > 0 && !filterClienteIds.includes(b.cliente!.id))
+        return false;
       if (filterVendedorIds.length > 0 && !b.vendedor?.id) return false;
       if (
         filterVendedorIds.length > 0 &&
@@ -60,7 +73,7 @@ export function BillsTable({ userId }: { userId: string }) {
       if (filterSaldoMin != null && getSaldo(b) < filterSaldoMin) return false;
       return true;
     });
-  }, [bills, filterVendedorIds, filterCiudadIds, filterSaldoMin]);
+  }, [bills, filterClienteIds, filterVendedorIds, filterCiudadIds, filterSaldoMin]);
 
   const liquidarMutation = useMutation({
     mutationFn: (billId: string) =>
@@ -132,16 +145,20 @@ export function BillsTable({ userId }: { userId: string }) {
         isUpdatingBill={updateBillMutation.isPending}
         openPayments={setPaymentsBillId}
         openDescuentos={setDescuentosBillId}
+        filterClienteIds={filterClienteIds}
         filterVendedorIds={filterVendedorIds}
         filterCiudadIds={filterCiudadIds}
         filterSaldoMin={filterSaldoMin}
+        setFilterClienteIds={setFilterClienteIds}
         setFilterVendedorIds={setFilterVendedorIds}
         setFilterCiudadIds={setFilterCiudadIds}
         setFilterSaldoMin={setFilterSaldoMin}
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        uniqueClientes={uniqueClientes}
         uniqueVendedores={uniqueVendedores}
         uniqueCiudades={uniqueCiudades}
+        clienteThRef={clienteThRef}
         vendedorThRef={vendedorThRef}
         ciudadThRef={ciudadThRef}
         saldoThRef={saldoThRef}
@@ -163,6 +180,17 @@ export function BillsTable({ userId }: { userId: string }) {
         isUpdatingBill={updateBillMutation.isPending}
         openPayments={setPaymentsBillId}
         openDescuentos={setDescuentosBillId}
+        filterClienteIds={filterClienteIds}
+        filterVendedorIds={filterVendedorIds}
+        filterCiudadIds={filterCiudadIds}
+        filterSaldoMin={filterSaldoMin}
+        setFilterClienteIds={setFilterClienteIds}
+        setFilterVendedorIds={setFilterVendedorIds}
+        setFilterCiudadIds={setFilterCiudadIds}
+        setFilterSaldoMin={setFilterSaldoMin}
+        uniqueClientes={uniqueClientes}
+        uniqueVendedores={uniqueVendedores}
+        uniqueCiudades={uniqueCiudades}
         onSelectBill={(bill) => setSelectedBillId(bill.id)}
       />
       {selectedBill && (
