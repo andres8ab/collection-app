@@ -13,35 +13,50 @@ datasource db {
 
 model Ciudad {
   id        String   @id @default(cuid())
-  nombre    String   @unique
+  userId    String
+  nombre    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   clientes Cliente[]
   bills    Bill[]
+
+  @@unique([userId, nombre])
+  @@index([userId])
 }
 
 model Cliente {
   id        String   @id @default(cuid())
+  userId    String
   nombre    String
-  nit       String   @unique
+  nit       String
   direccion String?
   ciudadId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   ciudad Ciudad   @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
   bills  Bill[]
+
+  @@unique([userId, nit])
+  @@index([userId, ciudadId])
 }
 
 model Vendedor {
   id        String   @id @default(cuid())
+  userId    String
   nombre    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bills       Bill[]
   settlements MonthlySettlement[]
+
+  @@unique([userId, nombre])
+  @@index([userId])
 }
 
 model Bill {
@@ -86,27 +101,33 @@ model Bill {
 
 model BillDescuento {
   id        String   @id @default(cuid())
+  userId    String
   billId    String
   amount    Decimal  @db.Decimal(14, 2)
   concepto  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
 
+  @@index([userId, billId])
   @@index([billId])
 }
 
 model BillPayment {
   id        String   @id @default(cuid())
+  userId    String
   billId    String
   amount    Decimal  @db.Decimal(14, 2)
   paidAt    DateTime @db.Date
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
 
+  @@index([userId, billId, paidAt])
   @@index([billId, paidAt])
 }
 
@@ -127,7 +148,7 @@ model MonthlySettlement {
   vendedor Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
   bills    Bill[]
 
-  @@unique([vendedorId, month])
+  @@unique([userId, vendedorId, month])
   @@index([userId, vendedorId, month])
   @@index([vendedorId])
 }
@@ -141,6 +162,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  ciudades    Ciudad[]
+  clientes    Cliente[]
+  vendedores  Vendedor[]
   bills       Bill[]
+  billDescuentos BillDescuento[]
+  billPayments   BillPayment[]
   settlements MonthlySettlement[]
 }
