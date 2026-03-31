@@ -9,68 +9,68 @@
 :root {
   --sea-ink: #173a40;
   --sea-ink-soft: #416166;
-  --lagoon: #4fb8b2;
-  --lagoon-deep: #328f97;
-  --palm: #2f6a4a;
-  --sand: #e7f0e8;
-  --foam: #f3faf5;
-  --surface: rgba(255, 255, 255, 0.74);
-  --surface-strong: rgba(255, 255, 255, 0.9);
-  --line: rgba(23, 58, 64, 0.14);
+  --lagoon: #ff4fb8;
+  --lagoon-deep: #cf2f8f;
+  --palm: #8b3fe9;
+  --sand: #f8e9f4;
+  --foam: #fff6fb;
+  --surface: rgba(255, 241, 250, 0.72);
+  --surface-strong: rgba(255, 246, 252, 0.92);
+  --line: rgba(177, 44, 125, 0.22);
   --inset-glint: rgba(255, 255, 255, 0.82);
-  --kicker: rgba(47, 106, 74, 0.9);
-  --bg-base: #e7f3ec;
-  --header-bg: rgba(251, 255, 248, 0.84);
-  --chip-bg: rgba(255, 255, 255, 0.8);
-  --chip-line: rgba(47, 106, 74, 0.18);
-  --link-bg-hover: rgba(255, 255, 255, 0.9);
-  --hero-a: rgba(79, 184, 178, 0.36);
-  --hero-b: rgba(47, 106, 74, 0.2);
+  --kicker: rgba(159, 38, 111, 0.9);
+  --bg-base: #f4e5f2;
+  --header-bg: rgba(255, 243, 251, 0.86);
+  --chip-bg: rgba(255, 243, 250, 0.84);
+  --chip-line: rgba(177, 44, 125, 0.26);
+  --link-bg-hover: rgba(255, 233, 247, 0.94);
+  --hero-a: rgba(255, 79, 184, 0.3);
+  --hero-b: rgba(139, 63, 233, 0.18);
 }
 
 :root[data-theme="dark"] {
   --sea-ink: #d7ece8;
-  --sea-ink-soft: #afcdc8;
-  --lagoon: #60d7cf;
-  --lagoon-deep: #8de5db;
-  --palm: #6ec89a;
-  --sand: #0f1a1e;
-  --foam: #101d22;
-  --surface: rgba(16, 30, 34, 0.8);
-  --surface-strong: rgba(15, 27, 31, 0.92);
-  --line: rgba(141, 229, 219, 0.18);
-  --inset-glint: rgba(194, 247, 238, 0.14);
-  --kicker: #b8efe5;
-  --bg-base: #0a1418;
-  --header-bg: rgba(10, 20, 24, 0.8);
-  --chip-bg: rgba(13, 28, 32, 0.9);
-  --chip-line: rgba(141, 229, 219, 0.24);
-  --link-bg-hover: rgba(24, 44, 49, 0.8);
-  --hero-a: rgba(96, 215, 207, 0.18);
-  --hero-b: rgba(110, 200, 154, 0.12);
+  --sea-ink-soft: #c5d8d6;
+  --lagoon: #ff61c0;
+  --lagoon-deep: #ff95d4;
+  --palm: #b783ff;
+  --sand: #110b16;
+  --foam: #181021;
+  --surface: rgba(30, 17, 38, 0.82);
+  --surface-strong: rgba(36, 20, 46, 0.94);
+  --line: rgba(255, 128, 204, 0.24);
+  --inset-glint: rgba(255, 193, 228, 0.12);
+  --kicker: #ffc3e8;
+  --bg-base: #09060f;
+  --header-bg: rgba(16, 9, 22, 0.82);
+  --chip-bg: rgba(29, 16, 37, 0.9);
+  --chip-line: rgba(255, 128, 204, 0.3);
+  --link-bg-hover: rgba(44, 24, 56, 0.84);
+  --hero-a: rgba(255, 97, 192, 0.2);
+  --hero-b: rgba(183, 131, 255, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --sea-ink: #d7ece8;
-    --sea-ink-soft: #afcdc8;
-    --lagoon: #60d7cf;
-    --lagoon-deep: #8de5db;
-    --palm: #6ec89a;
-    --sand: #0f1a1e;
-    --foam: #101d22;
-    --surface: rgba(16, 30, 34, 0.8);
-    --surface-strong: rgba(15, 27, 31, 0.92);
-    --line: rgba(141, 229, 219, 0.18);
-    --inset-glint: rgba(194, 247, 238, 0.14);
-    --kicker: #b8efe5;
-    --bg-base: #0a1418;
-    --header-bg: rgba(10, 20, 24, 0.8);
-    --chip-bg: rgba(13, 28, 32, 0.9);
-    --chip-line: rgba(141, 229, 219, 0.24);
-    --link-bg-hover: rgba(24, 44, 49, 0.8);
-    --hero-a: rgba(96, 215, 207, 0.18);
-    --hero-b: rgba(110, 200, 154, 0.12);
+    --sea-ink-soft: #c5d8d6;
+    --lagoon: #ff61c0;
+    --lagoon-deep: #ff95d4;
+    --palm: #b783ff;
+    --sand: #110b16;
+    --foam: #181021;
+    --surface: rgba(30, 17, 38, 0.82);
+    --surface-strong: rgba(36, 20, 46, 0.94);
+    --line: rgba(255, 128, 204, 0.24);
+    --inset-glint: rgba(255, 193, 228, 0.12);
+    --kicker: #ffc3e8;
+    --bg-base: #09060f;
+    --header-bg: rgba(16, 9, 22, 0.82);
+    --chip-bg: rgba(29, 16, 37, 0.9);
+    --chip-line: rgba(255, 128, 204, 0.3);
+    --link-bg-hover: rgba(44, 24, 56, 0.84);
+    --hero-a: rgba(255, 97, 192, 0.2);
+    --hero-b: rgba(183, 131, 255, 0.16);
   }
 }
 
@@ -207,24 +207,28 @@ pre code {
 
 .island-shell {
   border: 1px solid var(--line);
-  background: linear-gradient(165deg, var(--surface-strong), var(--surface));
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--surface-strong) 82%, var(--lagoon) 18%),
+    color-mix(in oklab, var(--surface) 88%, var(--palm) 12%)
+  );
   box-shadow:
     0 1px 0 var(--inset-glint) inset,
-    0 22px 44px rgba(30, 90, 72, 0.1),
-    0 6px 18px rgba(23, 58, 64, 0.08);
+    0 24px 48px rgba(207, 47, 143, 0.15),
+    0 8px 20px rgba(68, 20, 86, 0.12);
   backdrop-filter: blur(4px);
 }
 
 .feature-card {
   background: linear-gradient(
     165deg,
-    color-mix(in oklab, var(--surface-strong) 93%, white 7%),
-    var(--surface)
+    color-mix(in oklab, var(--surface-strong) 72%, var(--lagoon) 28%),
+    color-mix(in oklab, var(--surface) 80%, var(--palm) 20%)
   );
   box-shadow:
     0 1px 0 var(--inset-glint) inset,
-    0 18px 34px rgba(30, 90, 72, 0.1),
-    0 4px 14px rgba(23, 58, 64, 0.06);
+    0 18px 36px rgba(207, 47, 143, 0.14),
+    0 6px 16px rgba(68, 20, 86, 0.11);
 }
 
 .feature-card:hover {

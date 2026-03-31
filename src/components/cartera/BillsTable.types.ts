@@ -43,12 +43,17 @@ export const COLS: BillColumn[] = [
   { key: "descuentos", label: "Descuentos", money: true },
   { key: "saldo", label: "Saldo", money: true },
   { key: "reteFuente", label: "Rete Fuente", money: true },
-  { key: "iva", label: "IVA", money: true },
-  { key: "vSinIva", label: "V. Sin IVA", money: true },
+  // { key: "iva", label: "IVA", money: true },
+  // { key: "vSinIva", label: "V. Sin IVA", money: true },
   { key: "vComi", label: "V. Comi.", money: true },
   { key: "estado", label: "Estado" },
 ];
 
-export const FILTERABLE_COLS = ["cliente", "vendedor", "ciudad", "saldo"] as const;
+export const FILTERABLE_COLS = [
+  "cliente",
+  "vendedor",
+  "ciudad",
+  "saldo",
+] as const;
 
 export type FilterableCol = (typeof FILTERABLE_COLS)[number];

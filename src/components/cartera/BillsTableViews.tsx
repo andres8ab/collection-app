@@ -8,7 +8,8 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { fmtMoney, fmtNum, getMesLabel, toDecimalValue } from "../../lib/utils";
 import { ColumnFilterPopover } from "./BillsTableFilters";
 import { COLS } from "./BillsTable.types";
@@ -497,7 +498,15 @@ export function BillMobileDetailModal({
   ...props
 }: SharedProps & { bill: BillWithRelations; onClose: () => void }) {
   const isEditing = props.editing === bill.id;
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-60 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4 md:hidden">
       <div className="island-shell max-h-[92vh] w-full overflow-auto rounded-t-2xl bg-[var(--surface-strong)] p-0 sm:max-w-lg sm:rounded-2xl">
         <div className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3 backdrop-blur">
@@ -600,7 +609,8 @@ export function BillMobileDetailModal({
           {renderActions(bill, isEditing, props)}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
