@@ -40,6 +40,7 @@ export function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
       addBillPayment({
         data: {
           billId: bill.id,
+          userId: bill.userId,
           amount: payload.amount,
           paidAt: payload.paidAt,
         },
@@ -194,6 +195,7 @@ export function BillDescuentosModal({
       addBillDescuento({
         data: {
           billId: bill.id,
+          userId: bill.userId,
           amount: payload.amount,
           concepto: payload.concepto,
         },

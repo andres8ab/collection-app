@@ -24,9 +24,12 @@ export function ComboboxCiudad({
   const [filter, setFilter] = useState("");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  const [createdCiudad, setCreatedCiudad] = useState<Ciudad | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  const selected = options.find((c) => c.id === value);
+  const selected =
+    options.find((c) => c.id === value) ??
+    (createdCiudad?.id === value ? createdCiudad : undefined);
   const filtered = filter.trim()
     ? options.filter((c) =>
         c.nombre.toLowerCase().includes(filter.toLowerCase()),
@@ -48,6 +51,7 @@ export function ComboboxCiudad({
     setAdding(true);
     try {
       const created = await onCreate(nombre);
+      setCreatedCiudad(created);
       onChange(created.id, created);
       setNewName("");
       setFilter("");

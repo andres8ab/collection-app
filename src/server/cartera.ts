@@ -53,41 +53,30 @@ function serializeDescuento<T extends Record<string, unknown>>(d: T): T {
 
 // --- Ciudades
 export const listCiudades = createServerFn({ method: 'GET' })
-  .inputValidator((q: string | undefined) => q)
+  .inputValidator((data: { userId: string }) => data)
   .handler(async (ctx) => {
-    const search = ctx.data
     const ciudades = await db.ciudad.findMany({
-      where: search
-        ? { nombre: { contains: search, mode: 'insensitive' } }
-        : undefined,
+      where: { userId: ctx.data.userId },
       orderBy: { nombre: 'asc' },
     })
     return ciudades
   })
 
 export const createCiudad = createServerFn({ method: 'POST' })
-  .inputValidator((data: { nombre: string }) => data)
+  .inputValidator((data: { nombre: string; userId: string }) => data)
   .handler(async (ctx) => {
-    const data = ctx.data
+    const { nombre, userId } = ctx.data
     return db.ciudad.create({
-      data: { nombre: data.nombre.trim() },
+      data: { nombre: nombre.trim(), userId },
     })
   })
 
 // --- Clientes
 export const listClientes = createServerFn({ method: 'GET' })
-  .inputValidator((q: string | undefined) => q)
+  .inputValidator((data: { userId: string }) => data)
   .handler(async (ctx) => {
-    const search = ctx.data
     const clientes = await db.cliente.findMany({
-      where: search
-        ? {
-            OR: [
-              { nombre: { contains: search, mode: 'insensitive' } },
-              { nit: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where: { userId: ctx.data.userId },
       include: { ciudad: true },
       orderBy: { nombre: 'asc' },
     })
@@ -96,29 +85,30 @@ export const listClientes = createServerFn({ method: 'GET' })
 
 export const createCliente = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { nombre: string; nit: string; direccion?: string; ciudadId: string }) =>
+    (data: { nombre: string; nit: string; direccion?: string; ciudadId: string; userId: string }) =>
       data
   )
   .handler(async (ctx) => {
-    const data = ctx.data
-    const nit = data.nit.trim()
+    const { userId, ...rest } = ctx.data
+    const nit = rest.nit.trim()
     if (!nit) {
       throw new Error('El NIT es requerido')
     }
 
-    // Validate uniqueness by NIT: if it exists, return it (so the UI selects it).
+    // Validate uniqueness by (userId, nit): if it exists, return it (so the UI selects it).
     const existing = await db.cliente.findUnique({
-      where: { nit },
+      where: { userId_nit: { userId, nit } },
       include: { ciudad: true },
     })
     if (existing) return existing
 
     return db.cliente.create({
       data: {
-        nombre: data.nombre.trim(),
+        userId,
+        nombre: rest.nombre.trim(),
         nit,
-        direccion: data.direccion?.trim() || null,
-        ciudadId: data.ciudadId,
+        direccion: rest.direccion?.trim() || null,
+        ciudadId: rest.ciudadId,
       },
       include: { ciudad: true },
     })
@@ -145,24 +135,21 @@ export const updateCliente = createServerFn({ method: 'POST' })
 
 // --- Vendedores
 export const listVendedores = createServerFn({ method: 'GET' })
-  .inputValidator((q: string | undefined) => q)
+  .inputValidator((data: { userId: string }) => data)
   .handler(async (ctx) => {
-    const search = ctx.data
     const vendedores = await db.vendedor.findMany({
-      where: search
-        ? { nombre: { contains: search, mode: 'insensitive' } }
-        : undefined,
+      where: { userId: ctx.data.userId },
       orderBy: { nombre: 'asc' },
     })
     return vendedores
   })
 
 export const createVendedor = createServerFn({ method: 'POST' })
-  .inputValidator((data: { nombre: string }) => data)
+  .inputValidator((data: { nombre: string; userId: string }) => data)
   .handler(async (ctx) => {
-    const data = ctx.data
+    const { nombre, userId } = ctx.data
     return db.vendedor.create({
-      data: { nombre: data.nombre.trim() },
+      data: { nombre: nombre.trim(), userId },
     })
   })
 
@@ -180,12 +167,7 @@ export const listBills = createServerFn({ method: 'POST' })
       opts,
   )
   .handler(async (ctx) => {
-    type ListBillsInput = { userId: string; vendedorId?: string; clienteId?: string; estado?: BillEstado }
-    const raw = ctx.data as ListBillsInput | { data?: ListBillsInput }
-    const opts: ListBillsInput | undefined = 'userId' in (raw ?? {}) ? (raw as ListBillsInput) : raw?.data
-    if (!opts?.userId) {
-      return []
-    }
+    const opts = ctx.data
     const bills = await db.bill.findMany({
       where: {
         userId: opts.userId,
@@ -349,10 +331,10 @@ export const listBillPayments = createServerFn({ method: 'GET' })
 
 export const addBillPayment = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { billId: string; amount: number; paidAt: string }) => data,
+    (data: { billId: string; userId: string; amount: number; paidAt: string }) => data,
   )
   .handler(async (ctx) => {
-    const { billId, amount, paidAt } = ctx.data
+    const { billId, userId, amount, paidAt } = ctx.data
     const cleanAmount = Number(amount)
     if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
       throw new Error('Monto inválido')
@@ -361,6 +343,7 @@ export const addBillPayment = createServerFn({ method: 'POST' })
     await db.billPayment.create({
       data: {
         billId,
+        userId,
         amount: cleanAmount,
         paidAt: paidDate,
       },
@@ -401,9 +384,9 @@ export const listBillDescuentos = createServerFn({ method: 'GET' })
   })
 
 export const addBillDescuento = createServerFn({ method: 'POST' })
-  .inputValidator((data: { billId: string; amount: number; concepto: string }) => data)
+  .inputValidator((data: { billId: string; userId: string; amount: number; concepto: string }) => data)
   .handler(async (ctx) => {
-    const { billId, amount, concepto } = ctx.data
+    const { billId, userId, amount, concepto } = ctx.data
     const cleanAmount = Number(amount)
     const cleanConcepto = concepto.trim()
     if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
@@ -416,6 +399,7 @@ export const addBillDescuento = createServerFn({ method: 'POST' })
     await db.billDescuento.create({
       data: {
         billId,
+        userId,
         amount: cleanAmount,
         concepto: cleanConcepto,
       },
@@ -461,7 +445,7 @@ export const liquidarFactura = createServerFn({ method: 'POST' })
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     let settlement = await db.monthlySettlement.findUnique({
       where: {
-        vendedorId_month: { vendedorId: bill.vendedorId, month: monthKey },
+        userId_vendedorId_month: { userId, vendedorId: bill.vendedorId, month: monthKey },
       },
     })
     if (!settlement) {

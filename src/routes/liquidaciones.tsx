@@ -42,8 +42,8 @@ function LiquidacionesPage() {
   const [selectedSettlementId, setSelectedSettlementId] = useState<string | null>(null)
 
   const { data: vendedores = [] } = useQuery({
-    queryKey: ['vendedores'],
-    queryFn: () => listVendedores({ data: undefined }),
+    queryKey: ['vendedores', user.id],
+    queryFn: () => listVendedores({ data: { userId: user.id } }),
   })
 
   const { data: settlements = [] } = useQuery({

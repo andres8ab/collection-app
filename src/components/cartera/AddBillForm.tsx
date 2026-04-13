@@ -25,16 +25,16 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
   const [open, setOpen] = useState(false)
 
   const { data: ciudades = [] } = useQuery({
-    queryKey: ['ciudades'],
-    queryFn: () => listCiudades({ data: undefined }),
+    queryKey: ['ciudades', userId],
+    queryFn: () => listCiudades({ data: { userId } }),
   })
   const { data: clientes = [] } = useQuery({
-    queryKey: ['clientes'],
-    queryFn: () => listClientes({ data: undefined }),
+    queryKey: ['clientes', userId],
+    queryFn: () => listClientes({ data: { userId } }),
   })
   const { data: vendedores = [] } = useQuery({
-    queryKey: ['vendedores'],
-    queryFn: () => listVendedores({ data: undefined }),
+    queryKey: ['vendedores', userId],
+    queryFn: () => listVendedores({ data: { userId } }),
   })
 
   const createBillMutation = useMutation({
@@ -116,13 +116,14 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
             value={clienteId}
             onChange={(id) => setClienteId(id)}
             onCreate={async (data) => {
-              const c = await createCliente({ data })
-              queryClient.invalidateQueries({ queryKey: ['clientes'] })
-              return c
+              const c = await createCliente({ data: { ...data, userId } })
+              queryClient.invalidateQueries({ queryKey: ['clientes', userId] })
+              const ciudad = ciudades.find((ci) => ci.id === data.ciudadId) ?? { id: data.ciudadId, nombre: '' }
+              return { ...c, ciudad }
             }}
             onCreateCiudad={async (nombre) => {
-              const ci = await createCiudad({ data: { nombre } })
-              queryClient.invalidateQueries({ queryKey: ['ciudades'] })
+              const ci = await createCiudad({ data: { nombre, userId } })
+              queryClient.invalidateQueries({ queryKey: ['ciudades', userId] })
               return ci
             }}
           />
@@ -155,8 +156,8 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
             value={ciudadId}
             onChange={(id) => setCiudadId(id)}
             onCreate={async (nombre) => {
-              const c = await createCiudad({ data: { nombre } })
-              queryClient.invalidateQueries({ queryKey: ['ciudades'] })
+              const c = await createCiudad({ data: { nombre, userId } })
+              queryClient.invalidateQueries({ queryKey: ['ciudades', userId] })
               return c
             }}
           />
@@ -168,8 +169,8 @@ export function AddBillForm({ userId, onSuccess }: { userId: string; onSuccess?:
             value={vendedorId}
             onChange={(id) => setVendedorId(id)}
             onCreate={async (nombre) => {
-              const v = await createVendedor({ data: { nombre } })
-              queryClient.invalidateQueries({ queryKey: ['vendedores'] })
+              const v = await createVendedor({ data: { nombre, userId } })
+              queryClient.invalidateQueries({ queryKey: ['vendedores', userId] })
               return v
             }}
           />

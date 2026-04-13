@@ -2,6 +2,7 @@ export type BillWithRelations = {
   id: string;
   fv: number;
   fecha: Date;
+  userId: string;
   valor: { toString(): string };
   abono: { toString(): string } | null;
   reteFuente: { toString(): string } | null;

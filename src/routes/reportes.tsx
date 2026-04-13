@@ -50,8 +50,8 @@ function ReportesPage() {
   } | null>(null)
 
   const { data: clientes = [] } = useQuery({
-    queryKey: ['clientes'],
-    queryFn: () => listClientes({ data: undefined }),
+    queryKey: ['clientes', user.id],
+    queryFn: () => listClientes({ data: { userId: user.id } }),
   })
 
   const { data: statement, isLoading } = useQuery({
