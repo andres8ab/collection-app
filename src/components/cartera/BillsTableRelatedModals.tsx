@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   addBillDescuento,
   addBillPayment,
@@ -10,6 +11,12 @@ import {
 } from "../../server/cartera";
 import { fmtMoney, toDecimalValue } from "../../lib/utils";
 import type { BillWithRelations } from "./BillsTable.types";
+
+function useClientMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
 
 type BillPaymentsModalProps = {
   bill: BillWithRelations;
@@ -60,13 +67,16 @@ export function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
     },
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
+  const mounted = useClientMounted();
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-70 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
       <div className="island-shell max-h-[90vh] w-full max-w-lg overflow-hidden rounded-t-2xl bg-[var(--surface-strong)] pb-[env(safe-area-inset-bottom)] sm:rounded-2xl sm:pb-0">
         <div className="flex items-start justify-between gap-2 border-b border-[var(--line)] px-4 py-3 sm:px-5 sm:py-4">
           <div>
             <p className="island-kicker mb-1">Abonos</p>
-            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl">
+            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl max-w-[80vw] md:max-w-96">
               FV {bill.fv} · {bill.cliente?.nombre ?? ""}
             </h2>
           </div>
@@ -159,7 +169,8 @@ export function BillPaymentsModal({ bill, onClose }: BillPaymentsModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -216,13 +227,16 @@ export function BillDescuentosModal({
     },
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
+  const mounted = useClientMounted();
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-70 flex items-end justify-center bg-black/35 p-0 sm:items-center sm:p-4">
       <div className="island-shell max-h-[90vh] w-full max-w-lg overflow-hidden rounded-t-2xl bg-[var(--surface-strong)] pb-[env(safe-area-inset-bottom)] sm:rounded-2xl sm:pb-0">
         <div className="flex items-start justify-between gap-2 border-b border-[var(--line)] px-4 py-3 sm:px-5 sm:py-4">
           <div>
             <p className="island-kicker mb-1">Descuentos</p>
-            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl">
+            <h2 className="display-title m-0 truncate text-lg font-bold text-[var(--sea-ink)] sm:text-xl max-w-[80vw] md:max-w-96">
               FV {bill.fv} · {bill.cliente?.nombre ?? ""}
             </h2>
           </div>
@@ -315,6 +329,7 @@ export function BillDescuentosModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

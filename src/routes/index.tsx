@@ -13,6 +13,13 @@ export const Route = createFileRoute('/')({
 
 function CarteraPage() {
   const { user, loading } = useAuth()
+  const userId = user?.id
+
+  const { data: billsData } = useQuery({
+    queryKey: ['bills', userId],
+    queryFn: () => listBills({ data: { userId: userId! } }),
+    enabled: Boolean(userId) && !loading,
+  })
 
   if (loading) {
     return (
@@ -29,13 +36,6 @@ function CarteraPage() {
     }
     return null
   }
-
-  const userId = user.id
-
-  const { data: billsData } = useQuery({
-    queryKey: ['bills', userId],
-    queryFn: () => listBills({ data: { userId } }),
-  })
 
   const bills = (billsData ?? []) as any[]
 
@@ -116,7 +116,7 @@ function CarteraPage() {
             </p>
           </div>
           <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
-            <AddBillForm userId={userId} />
+            <AddBillForm userId={user.id} />
             <span className="text-center text-[11px] text-[var(--sea-ink-soft)] sm:text-right">
               Registra ventas y mantén el flujo al día
             </span>
@@ -166,7 +166,7 @@ function CarteraPage() {
             </p>
           </div>
         </div>
-        <BillsTable userId={userId} />
+        <BillsTable userId={user.id} />
       </section>
     </main>
   )

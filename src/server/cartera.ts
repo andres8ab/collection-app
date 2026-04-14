@@ -183,7 +183,8 @@ export const listBills = createServerFn({ method: 'POST' })
         payments: true,
         descuentos: true,
       },
-      orderBy: [{ fecha: 'desc' }, { fv: 'desc' }],
+      // Primary: número de factura (FV). Secondary: fecha (mismo FV puede existir en otro cliente).
+      orderBy: [{ fv: 'asc' }, { fecha: 'desc' }],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return bills.map((b) => serializeBill(b as unknown as Record<string, unknown>)) as any
