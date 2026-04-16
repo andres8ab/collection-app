@@ -27,8 +27,16 @@ type SharedProps = {
   editing: string | null;
   editFecha: string;
   editValor: string;
+  editClienteId: string;
+  editVendedorId: string;
+  editCiudadId: string;
+  editFv: string;
   setEditFecha: (v: string) => void;
   setEditValor: (v: string) => void;
+  setEditClienteId: (v: string) => void;
+  setEditVendedorId: (v: string) => void;
+  setEditCiudadId: (v: string) => void;
+  setEditFv: (v: string) => void;
   startEdit: (bill: BillWithRelations) => void;
   cancelEdit: () => void;
   saveEdit: (id: string) => void;
@@ -38,6 +46,9 @@ type SharedProps = {
   isUpdatingBill: boolean;
   openPayments: (id: string) => void;
   openDescuentos: (id: string) => void;
+  uniqueClientes: { id: string; nombre: string }[];
+  uniqueVendedores: { id: string; nombre: string }[];
+  uniqueCiudades: { id: string; nombre: string }[];
 };
 
 type DesktopProps = SharedProps & {
@@ -51,9 +62,6 @@ type DesktopProps = SharedProps & {
   setFilterSaldoMin: (v: number | null) => void;
   openFilter: FilterableCol | null;
   setOpenFilter: (value: FilterableCol | null) => void;
-  uniqueClientes: { id: string; nombre: string }[];
-  uniqueVendedores: { id: string; nombre: string }[];
-  uniqueCiudades: { id: string; nombre: string }[];
   clienteThRef: React.RefObject<HTMLTableCellElement | null>;
   vendedorThRef: React.RefObject<HTMLTableCellElement | null>;
   ciudadThRef: React.RefObject<HTMLTableCellElement | null>;
@@ -205,9 +213,6 @@ export function BillsMobileList(
       | "setFilterVendedorIds"
       | "setFilterCiudadIds"
       | "setFilterSaldoMin"
-      | "uniqueClientes"
-      | "uniqueVendedores"
-      | "uniqueCiudades"
     > & {
       onSelectBill: (bill: BillWithRelations) => void;
     },
@@ -327,7 +332,7 @@ export function BillsMobileList(
           </div>
           <div className="mt-1 flex items-center justify-between text-sm">
             <span className="text-[var(--sea-ink-soft)]">
-              {new Date(bill.fecha).toLocaleDateString("es-CO")}
+              {new Date(bill.fecha).toLocaleDateString("es-CO", { timeZone: "UTC" })}
             </span>
             <strong className="text-[var(--sea-ink)]">
               {fmtMoney(toDecimalValue(cellValue(bill, COLS[9])))}
@@ -550,7 +555,7 @@ export function BillMobileDetailModal({
             label="Cliente"
             icon={<UserRound className="h-4 w-4 text-[var(--sea-ink-soft)]" />}
           >
-            {bill.cliente?.nombre ?? "—"}
+            {isEditing ? renderCell("cliente", bill, isEditing, props) : (bill.cliente?.nombre ?? "—")}
           </InfoCard>
           <InfoCard
             label="Fecha"
@@ -558,19 +563,19 @@ export function BillMobileDetailModal({
               <CalendarClock className="h-4 w-4 text-[var(--sea-ink-soft)]" />
             }
           >
-            {new Date(bill.fecha).toLocaleDateString("es-CO")}
+            {isEditing ? renderCell("fecha", bill, isEditing, props) : new Date(bill.fecha).toLocaleDateString("es-CO", { timeZone: "UTC" })}
           </InfoCard>
           <InfoCard
             label="Ciudad"
             icon={<MapPin className="h-4 w-4 text-[var(--sea-ink-soft)]" />}
           >
-            {bill.ciudad?.nombre ?? "—"}
+            {isEditing ? renderCell("ciudad", bill, isEditing, props) : (bill.ciudad?.nombre ?? "—")}
           </InfoCard>
           <InfoCard
             label="Vendedor"
             icon={<Building2 className="h-4 w-4 text-[var(--sea-ink-soft)]" />}
           >
-            {bill.vendedor?.nombre ?? "—"}
+            {isEditing ? renderCell("vendedor", bill, isEditing, props) : (bill.vendedor?.nombre ?? "—")}
           </InfoCard>
           <InfoCard
             label="Saldo"
@@ -641,6 +646,57 @@ function renderCell(
   props: SharedProps,
 ) {
   const col = COLS.find((c) => c.key === key)!;
+  if (key === "fv" && isEditing) {
+    return (
+      <input
+        type="number"
+        min={1}
+        step={1}
+        value={props.editFv}
+        onChange={(e) => props.setEditFv(e.target.value)}
+        className="w-24 rounded border border-[var(--line)] bg-[var(--surface)] px-1 py-0.5 text-sm"
+      />
+    );
+  }
+  if (key === "cliente" && isEditing) {
+    return (
+      <select
+        value={props.editClienteId}
+        onChange={(e) => props.setEditClienteId(e.target.value)}
+        className="rounded border border-[var(--line)] bg-[var(--surface)] px-1 py-0.5 text-sm"
+      >
+        {props.uniqueClientes.map((c) => (
+          <option key={c.id} value={c.id}>{c.nombre}</option>
+        ))}
+      </select>
+    );
+  }
+  if (key === "vendedor" && isEditing) {
+    return (
+      <select
+        value={props.editVendedorId}
+        onChange={(e) => props.setEditVendedorId(e.target.value)}
+        className="rounded border border-[var(--line)] bg-[var(--surface)] px-1 py-0.5 text-sm"
+      >
+        {props.uniqueVendedores.map((v) => (
+          <option key={v.id} value={v.id}>{v.nombre}</option>
+        ))}
+      </select>
+    );
+  }
+  if (key === "ciudad" && isEditing) {
+    return (
+      <select
+        value={props.editCiudadId}
+        onChange={(e) => props.setEditCiudadId(e.target.value)}
+        className="rounded border border-[var(--line)] bg-[var(--surface)] px-1 py-0.5 text-sm"
+      >
+        {props.uniqueCiudades.map((c) => (
+          <option key={c.id} value={c.id}>{c.nombre}</option>
+        ))}
+      </select>
+    );
+  }
   if (key === "fecha" && isEditing) {
     return (
       <input

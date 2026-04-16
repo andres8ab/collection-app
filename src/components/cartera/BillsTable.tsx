@@ -13,6 +13,10 @@ export function BillsTable({ userId }: { userId: string }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [editFecha, setEditFecha] = useState("");
   const [editValor, setEditValor] = useState("");
+  const [editClienteId, setEditClienteId] = useState("");
+  const [editVendedorId, setEditVendedorId] = useState("");
+  const [editCiudadId, setEditCiudadId] = useState("");
+  const [editFv, setEditFv] = useState("");
   const [paymentsBillId, setPaymentsBillId] = useState<string | null>(null);
   const [descuentosBillId, setDescuentosBillId] = useState<string | null>(null);
   const [filterClienteIds, setFilterClienteIds] = useState<string[]>([]);
@@ -93,6 +97,10 @@ export function BillsTable({ userId }: { userId: string }) {
       fecha?: string;
       valor?: number;
       conditioned?: boolean;
+      clienteId?: string;
+      vendedorId?: string;
+      ciudadId?: string;
+      fv?: number;
     }) => updateBill({ data: { ...data, userId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
@@ -104,14 +112,23 @@ export function BillsTable({ userId }: { userId: string }) {
     setEditing(b.id);
     setEditFecha(new Date(b.fecha).toISOString().slice(0, 10));
     setEditValor(String(toDecimalValue(b.valor)));
+    setEditClienteId(b.cliente.id);
+    setEditVendedorId(b.vendedor.id);
+    setEditCiudadId(b.ciudad.id);
+    setEditFv(String(b.fv));
   };
 
   const saveEdit = (id: string) => {
     const parsedValor = Number(editValor);
+    const parsedFv = Number(editFv);
     updateBillMutation.mutate({
       id,
       fecha: editFecha || undefined,
       valor: Number.isFinite(parsedValor) ? parsedValor : undefined,
+      clienteId: editClienteId || undefined,
+      vendedorId: editVendedorId || undefined,
+      ciudadId: editCiudadId || undefined,
+      fv: Number.isFinite(parsedFv) && parsedFv > 0 ? parsedFv : undefined,
     });
   };
 
@@ -134,8 +151,16 @@ export function BillsTable({ userId }: { userId: string }) {
         editing={editing}
         editFecha={editFecha}
         editValor={editValor}
+        editClienteId={editClienteId}
+        editVendedorId={editVendedorId}
+        editCiudadId={editCiudadId}
+        editFv={editFv}
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
+        setEditClienteId={setEditClienteId}
+        setEditVendedorId={setEditVendedorId}
+        setEditCiudadId={setEditCiudadId}
+        setEditFv={setEditFv}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
@@ -169,8 +194,16 @@ export function BillsTable({ userId }: { userId: string }) {
         editing={editing}
         editFecha={editFecha}
         editValor={editValor}
+        editClienteId={editClienteId}
+        editVendedorId={editVendedorId}
+        editCiudadId={editCiudadId}
+        editFv={editFv}
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
+        setEditClienteId={setEditClienteId}
+        setEditVendedorId={setEditVendedorId}
+        setEditCiudadId={setEditCiudadId}
+        setEditFv={setEditFv}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
@@ -202,8 +235,16 @@ export function BillsTable({ userId }: { userId: string }) {
           editing={editing}
           editFecha={editFecha}
           editValor={editValor}
+          editClienteId={editClienteId}
+          editVendedorId={editVendedorId}
+          editCiudadId={editCiudadId}
+          editFv={editFv}
           setEditFecha={setEditFecha}
           setEditValor={setEditValor}
+          setEditClienteId={setEditClienteId}
+          setEditVendedorId={setEditVendedorId}
+          setEditCiudadId={setEditCiudadId}
+          setEditFv={setEditFv}
           startEdit={startEdit}
           cancelEdit={() => setEditing(null)}
           saveEdit={saveEdit}
@@ -213,6 +254,9 @@ export function BillsTable({ userId }: { userId: string }) {
           isUpdatingBill={updateBillMutation.isPending}
           openPayments={setPaymentsBillId}
           openDescuentos={setDescuentosBillId}
+          uniqueClientes={uniqueClientes}
+          uniqueVendedores={uniqueVendedores}
+          uniqueCiudades={uniqueCiudades}
         />
       )}
       {paymentsBillId && (
