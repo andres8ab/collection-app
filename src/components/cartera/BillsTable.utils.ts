@@ -36,7 +36,7 @@ export function cellValue(
   if (col.key === "cliente") return bill.cliente?.nombre ?? "—";
   if (col.key === "ciudad") return bill.ciudad?.nombre ?? "—";
   if (col.key === "vendedor") return bill.vendedor?.nombre ?? "—";
-  if (col.key === "fecha") return new Date(bill.fecha).toLocaleDateString("es-CO");
+  if (col.key === "fecha") return new Date(bill.fecha).toLocaleDateString("es-CO", { timeZone: "UTC" });
   if (col.key === "dias") return getDias(bill.fecha);
   if (col.key === "saldo") return getSaldo(bill);
   if (col.key === "estado") return bill.estado;

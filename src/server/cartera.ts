@@ -215,7 +215,7 @@ export const createBill = createServerFn({ method: 'POST' })
     const abono = toNum(data.abono)
     const pct = data.porcentajeComision ?? 0.05
     const { vSinIva, vComi, iva } = computeBillFields(valor, pct)
-    const fecha = data.fecha ? new Date(data.fecha) : new Date()
+    const fecha = data.fecha ? new Date(data.fecha + 'T12:00:00.000Z') : new Date()
     try {
       const bill = await db.bill.create({
         data: {
@@ -265,6 +265,10 @@ export const updateBill = createServerFn({ method: 'POST' })
       flete?: number | null
       comentarios?: string | null
       fecha?: string
+      clienteId?: string
+      vendedorId?: string
+      ciudadId?: string
+      fv?: number
     }) => data
   )
   .handler(async (ctx) => {
@@ -282,7 +286,11 @@ export const updateBill = createServerFn({ method: 'POST' })
         ...(rest.reteFuente !== undefined && { reteFuente: toNum(rest.reteFuente) }),
         ...(rest.flete !== undefined && { flete: rest.flete }),
         ...(rest.comentarios !== undefined && { comentarios: rest.comentarios?.trim() || null }),
-        ...(rest.fecha && { fecha: new Date(rest.fecha) }),
+        ...(rest.fecha && { fecha: new Date(rest.fecha + 'T12:00:00.000Z') }),
+        ...(rest.clienteId && { clienteId: rest.clienteId }),
+        ...(rest.vendedorId && { vendedorId: rest.vendedorId }),
+        ...(rest.ciudadId && { ciudadId: rest.ciudadId }),
+        ...(rest.fv !== undefined && { fv: rest.fv }),
         iva,
         vSinIva,
         vComi,

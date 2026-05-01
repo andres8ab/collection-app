@@ -2,8 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { liquidarFactura, listBills, updateBill } from "../../server/cartera";
 import { toDecimalValue } from "../../lib/utils";
-import { BillDescuentosModal, BillPaymentsModal } from "./BillsTableRelatedModals";
-import { BillsDesktopTable, BillMobileDetailModal, BillsMobileList } from "./BillsTableViews";
+import {
+  BillDescuentosModal,
+  BillPaymentsModal,
+} from "./BillsTableRelatedModals";
+import {
+  BillsDesktopTable,
+  BillMobileDetailModal,
+  BillsMobileList,
+} from "./BillsTableViews";
 import type { BillWithRelations, FilterableCol } from "./BillsTable.types";
 import { getSaldo } from "./BillsTable.utils";
 
@@ -14,6 +21,10 @@ export function BillsTable({ userId }: { userId: string }) {
   const [editFecha, setEditFecha] = useState("");
   const [editValor, setEditValor] = useState("");
   const [editConditioned, setEditConditioned] = useState(false);
+  const [editClienteId, setEditClienteId] = useState("");
+  const [editVendedorId, setEditVendedorId] = useState("");
+  const [editCiudadId, setEditCiudadId] = useState("");
+  const [editFv, setEditFv] = useState("");
   const [paymentsBillId, setPaymentsBillId] = useState<string | null>(null);
   const [descuentosBillId, setDescuentosBillId] = useState<string | null>(null);
   const [filterClienteIds, setFilterClienteIds] = useState<string[]>([]);
@@ -60,7 +71,10 @@ export function BillsTable({ userId }: { userId: string }) {
   const filteredBills = useMemo(() => {
     return bills.filter((b) => {
       if (filterClienteIds.length > 0 && !b.cliente?.id) return false;
-      if (filterClienteIds.length > 0 && !filterClienteIds.includes(b.cliente!.id))
+      if (
+        filterClienteIds.length > 0 &&
+        !filterClienteIds.includes(b.cliente!.id)
+      )
         return false;
       if (filterVendedorIds.length > 0 && !b.vendedor?.id) return false;
       if (
@@ -74,7 +88,13 @@ export function BillsTable({ userId }: { userId: string }) {
       if (filterSaldoMin != null && getSaldo(b) < filterSaldoMin) return false;
       return true;
     });
-  }, [bills, filterClienteIds, filterVendedorIds, filterCiudadIds, filterSaldoMin]);
+  }, [
+    bills,
+    filterClienteIds,
+    filterVendedorIds,
+    filterCiudadIds,
+    filterSaldoMin,
+  ]);
 
   const liquidarMutation = useMutation({
     mutationFn: (billId: string) =>
@@ -94,6 +114,10 @@ export function BillsTable({ userId }: { userId: string }) {
       fecha?: string;
       valor?: number;
       conditioned?: boolean;
+      clienteId?: string;
+      vendedorId?: string;
+      ciudadId?: string;
+      fv?: number;
     }) => updateBill({ data: { ...data, userId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
@@ -106,15 +130,24 @@ export function BillsTable({ userId }: { userId: string }) {
     setEditFecha(new Date(b.fecha).toISOString().slice(0, 10));
     setEditValor(String(toDecimalValue(b.valor)));
     setEditConditioned(Boolean(b.conditioned));
+    setEditClienteId(b.cliente.id);
+    setEditVendedorId(b.vendedor.id);
+    setEditCiudadId(b.ciudad.id);
+    setEditFv(String(b.fv));
   };
 
   const saveEdit = (id: string) => {
     const parsedValor = Number(editValor);
+    const parsedFv = Number(editFv);
     updateBillMutation.mutate({
       id,
       fecha: editFecha || undefined,
       valor: Number.isFinite(parsedValor) ? parsedValor : undefined,
       conditioned: editConditioned,
+      clienteId: editClienteId || undefined,
+      vendedorId: editVendedorId || undefined,
+      ciudadId: editCiudadId || undefined,
+      fv: Number.isFinite(parsedFv) && parsedFv > 0 ? parsedFv : undefined,
     });
   };
 
@@ -126,7 +159,7 @@ export function BillsTable({ userId }: { userId: string }) {
     );
 
   const selectedBill = selectedBillId
-    ? bills.find((b) => b.id === selectedBillId) ?? null
+    ? (bills.find((b) => b.id === selectedBillId) ?? null)
     : null;
 
   return (
@@ -141,12 +174,24 @@ export function BillsTable({ userId }: { userId: string }) {
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
         setEditConditioned={setEditConditioned}
+        editClienteId={editClienteId}
+        editVendedorId={editVendedorId}
+        editCiudadId={editCiudadId}
+        editFv={editFv}
+        setEditFecha={setEditFecha}
+        setEditValor={setEditValor}
+        setEditClienteId={setEditClienteId}
+        setEditVendedorId={setEditVendedorId}
+        setEditCiudadId={setEditCiudadId}
+        setEditFv={setEditFv}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
         liquidar={(id) => liquidarMutation.mutate(id)}
         isLiquidating={liquidarMutation.isPending}
-        updateReteFuente={(id, value) => updateBillMutation.mutate({ id, reteFuente: value })}
+        updateReteFuente={(id, value) =>
+          updateBillMutation.mutate({ id, reteFuente: value })
+        }
         isUpdatingBill={updateBillMutation.isPending}
         openPayments={setPaymentsBillId}
         openDescuentos={setDescuentosBillId}
@@ -178,12 +223,24 @@ export function BillsTable({ userId }: { userId: string }) {
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
         setEditConditioned={setEditConditioned}
+        editClienteId={editClienteId}
+        editVendedorId={editVendedorId}
+        editCiudadId={editCiudadId}
+        editFv={editFv}
+        setEditFecha={setEditFecha}
+        setEditValor={setEditValor}
+        setEditClienteId={setEditClienteId}
+        setEditVendedorId={setEditVendedorId}
+        setEditCiudadId={setEditCiudadId}
+        setEditFv={setEditFv}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
         liquidar={(id) => liquidarMutation.mutate(id)}
         isLiquidating={liquidarMutation.isPending}
-        updateReteFuente={(id, value) => updateBillMutation.mutate({ id, reteFuente: value })}
+        updateReteFuente={(id, value) =>
+          updateBillMutation.mutate({ id, reteFuente: value })
+        }
         isUpdatingBill={updateBillMutation.isPending}
         openPayments={setPaymentsBillId}
         openDescuentos={setDescuentosBillId}
@@ -213,15 +270,30 @@ export function BillsTable({ userId }: { userId: string }) {
           setEditFecha={setEditFecha}
           setEditValor={setEditValor}
           setEditConditioned={setEditConditioned}
+          editClienteId={editClienteId}
+          editVendedorId={editVendedorId}
+          editCiudadId={editCiudadId}
+          editFv={editFv}
+          setEditFecha={setEditFecha}
+          setEditValor={setEditValor}
+          setEditClienteId={setEditClienteId}
+          setEditVendedorId={setEditVendedorId}
+          setEditCiudadId={setEditCiudadId}
+          setEditFv={setEditFv}
           startEdit={startEdit}
           cancelEdit={() => setEditing(null)}
           saveEdit={saveEdit}
           liquidar={(id) => liquidarMutation.mutate(id)}
           isLiquidating={liquidarMutation.isPending}
-          updateReteFuente={(id, value) => updateBillMutation.mutate({ id, reteFuente: value })}
+          updateReteFuente={(id, value) =>
+            updateBillMutation.mutate({ id, reteFuente: value })
+          }
           isUpdatingBill={updateBillMutation.isPending}
           openPayments={setPaymentsBillId}
           openDescuentos={setDescuentosBillId}
+          uniqueClientes={uniqueClientes}
+          uniqueVendedores={uniqueVendedores}
+          uniqueCiudades={uniqueCiudades}
         />
       )}
       {paymentsBillId && (
