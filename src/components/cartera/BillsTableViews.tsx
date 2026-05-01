@@ -21,14 +21,26 @@ import {
   getDescuentoTotal,
 } from "./BillsTable.utils";
 
+const OPTIONAL_DESKTOP_COLUMN_KEYS = [
+  "dias",
+  "ciudad",
+  "vendedor",
+  "abono",
+  "descuentos",
+  "reteFuente",
+  "vComi",
+] as const;
+
 type SharedProps = {
   bills: BillWithRelations[];
   allBills: BillWithRelations[];
   editing: string | null;
   editFecha: string;
   editValor: string;
+  editConditioned: boolean;
   setEditFecha: (v: string) => void;
   setEditValor: (v: string) => void;
+  setEditConditioned: (v: boolean) => void;
   startEdit: (bill: BillWithRelations) => void;
   cancelEdit: () => void;
   saveEdit: (id: string) => void;
@@ -61,13 +73,79 @@ type DesktopProps = SharedProps & {
 };
 
 export function BillsDesktopTable(props: DesktopProps) {
+  const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
+  const visibleCols = COLS.filter(
+    (col) => !hiddenColumns.includes(String(col.key)),
+  );
+  const optionalColumns = COLS.filter((col) =>
+    OPTIONAL_DESKTOP_COLUMN_KEYS.includes(
+      String(col.key) as (typeof OPTIONAL_DESKTOP_COLUMN_KEYS)[number],
+    ),
+  );
+  const isCompactView =
+    optionalColumns.length > 0 &&
+    optionalColumns.every((col) => hiddenColumns.includes(String(col.key)));
+
+  const toggleColumn = (colKey: string) => {
+    setHiddenColumns((prev) =>
+      prev.includes(colKey)
+        ? prev.filter((key) => key !== colKey)
+        : [...prev, colKey],
+    );
+  };
+
+  useEffect(() => {
+    if (props.openFilter && hiddenColumns.includes(props.openFilter)) {
+      props.setOpenFilter(null);
+    }
+  }, [hiddenColumns, props]);
+
   return (
     <div className="hidden rounded-xl border border-[var(--line)] md:block">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() =>
+              setHiddenColumns(
+                isCompactView
+                  ? []
+                  : OPTIONAL_DESKTOP_COLUMN_KEYS.map((key) => String(key)),
+              )
+            }
+            className="rounded border border-[var(--line)] px-2 py-1 text-xs font-medium text-[var(--sea-ink)] hover:bg-[var(--link-bg-hover)]"
+          >
+            {isCompactView ? "Restaurar columnas" : "Vista compacta"}
+          </button>
+          <span className="text-xs text-[var(--sea-ink-soft)]">
+            Oculta columnas que no necesitas por ahora.
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {optionalColumns.map((col) => {
+            const isVisible = !hiddenColumns.includes(String(col.key));
+            return (
+              <button
+                key={col.key}
+                type="button"
+                onClick={() => toggleColumn(String(col.key))}
+                className={`rounded-full border px-2 py-1 text-[11px] transition-colors ${
+                  isVisible
+                    ? "border-[var(--lagoon)] bg-[var(--chip-bg)] text-[var(--lagoon)]"
+                    : "border-[var(--line)] text-[var(--sea-ink-soft)]"
+                }`}
+              >
+                {col.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="responsive-table-wrap">
-        <table className="w-full min-w-[800px] border-collapse text-sm">
+        <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">
-              {COLS.map((col) => {
+              {visibleCols.map((col) => {
                 const isFilterable = [
                   "cliente",
                   "vendedor",
@@ -164,7 +242,12 @@ export function BillsDesktopTable(props: DesktopProps) {
           </thead>
           <tbody>
             {props.bills.map((bill) => (
-              <DesktopRow key={bill.id} bill={bill} {...props} />
+              <DesktopRow
+                key={bill.id}
+                bill={bill}
+                visibleColumns={visibleCols.map((col) => String(col.key))}
+                {...props}
+              />
             ))}
           </tbody>
         </table>
@@ -176,16 +259,19 @@ export function BillsDesktopTable(props: DesktopProps) {
 
 function DesktopRow({
   bill,
+  visibleColumns,
   ...props
-}: SharedProps & { bill: BillWithRelations }) {
+}: SharedProps & { bill: BillWithRelations; visibleColumns: string[] }) {
   const isEditing = props.editing === bill.id;
   return (
     <tr className="whitespace-nowrap border-b border-[var(--line)] hover:bg-[var(--link-bg-hover)]">
-      {COLS.map((col) => (
+      {COLS.filter((col) => visibleColumns.includes(String(col.key))).map(
+        (col) => (
         <td key={col.key} className="px-2 py-2 text-[var(--sea-ink)] sm:px-3">
           {renderCell(col.key, bill, isEditing, props)}
         </td>
-      ))}
+        ),
+      )}
       <td className="px-2 py-2 sm:px-3">
         {renderActions(bill, isEditing, props)}
       </td>
@@ -754,6 +840,15 @@ function renderActions(
   if (isEditing) {
     return (
       <div className="flex flex-wrap items-center justify-center gap-1">
+        <label className="mr-2 inline-flex cursor-pointer items-center gap-1 rounded border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-xs text-[var(--sea-ink)]">
+          <input
+            type="checkbox"
+            checked={props.editConditioned}
+            onChange={(e) => props.setEditConditioned(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border border-[var(--line)]"
+          />
+          Cond.
+        </label>
         <button
           type="button"
           onClick={() => props.saveEdit(bill.id)}

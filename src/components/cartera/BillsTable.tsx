@@ -13,6 +13,7 @@ export function BillsTable({ userId }: { userId: string }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [editFecha, setEditFecha] = useState("");
   const [editValor, setEditValor] = useState("");
+  const [editConditioned, setEditConditioned] = useState(false);
   const [paymentsBillId, setPaymentsBillId] = useState<string | null>(null);
   const [descuentosBillId, setDescuentosBillId] = useState<string | null>(null);
   const [filterClienteIds, setFilterClienteIds] = useState<string[]>([]);
@@ -104,6 +105,7 @@ export function BillsTable({ userId }: { userId: string }) {
     setEditing(b.id);
     setEditFecha(new Date(b.fecha).toISOString().slice(0, 10));
     setEditValor(String(toDecimalValue(b.valor)));
+    setEditConditioned(Boolean(b.conditioned));
   };
 
   const saveEdit = (id: string) => {
@@ -112,6 +114,7 @@ export function BillsTable({ userId }: { userId: string }) {
       id,
       fecha: editFecha || undefined,
       valor: Number.isFinite(parsedValor) ? parsedValor : undefined,
+      conditioned: editConditioned,
     });
   };
 
@@ -134,8 +137,10 @@ export function BillsTable({ userId }: { userId: string }) {
         editing={editing}
         editFecha={editFecha}
         editValor={editValor}
+        editConditioned={editConditioned}
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
+        setEditConditioned={setEditConditioned}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
@@ -169,8 +174,10 @@ export function BillsTable({ userId }: { userId: string }) {
         editing={editing}
         editFecha={editFecha}
         editValor={editValor}
+        editConditioned={editConditioned}
         setEditFecha={setEditFecha}
         setEditValor={setEditValor}
+        setEditConditioned={setEditConditioned}
         startEdit={startEdit}
         cancelEdit={() => setEditing(null)}
         saveEdit={saveEdit}
@@ -202,8 +209,10 @@ export function BillsTable({ userId }: { userId: string }) {
           editing={editing}
           editFecha={editFecha}
           editValor={editValor}
+          editConditioned={editConditioned}
           setEditFecha={setEditFecha}
           setEditValor={setEditValor}
+          setEditConditioned={setEditConditioned}
           startEdit={startEdit}
           cancelEdit={() => setEditing(null)}
           saveEdit={saveEdit}
