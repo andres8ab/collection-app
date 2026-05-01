@@ -38,8 +38,6 @@ type SharedProps = {
   editFecha: string;
   editValor: string;
   editConditioned: boolean;
-  setEditFecha: (v: string) => void;
-  setEditValor: (v: string) => void;
   setEditConditioned: (v: boolean) => void;
   editClienteId: string;
   editVendedorId: string;

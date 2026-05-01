@@ -178,8 +178,6 @@ export function BillsTable({ userId }: { userId: string }) {
         editVendedorId={editVendedorId}
         editCiudadId={editCiudadId}
         editFv={editFv}
-        setEditFecha={setEditFecha}
-        setEditValor={setEditValor}
         setEditClienteId={setEditClienteId}
         setEditVendedorId={setEditVendedorId}
         setEditCiudadId={setEditCiudadId}
@@ -227,8 +225,6 @@ export function BillsTable({ userId }: { userId: string }) {
         editVendedorId={editVendedorId}
         editCiudadId={editCiudadId}
         editFv={editFv}
-        setEditFecha={setEditFecha}
-        setEditValor={setEditValor}
         setEditClienteId={setEditClienteId}
         setEditVendedorId={setEditVendedorId}
         setEditCiudadId={setEditCiudadId}
@@ -274,8 +270,6 @@ export function BillsTable({ userId }: { userId: string }) {
           editVendedorId={editVendedorId}
           editCiudadId={editCiudadId}
           editFv={editFv}
-          setEditFecha={setEditFecha}
-          setEditValor={setEditValor}
           setEditClienteId={setEditClienteId}
           setEditVendedorId={setEditVendedorId}
           setEditCiudadId={setEditCiudadId}
