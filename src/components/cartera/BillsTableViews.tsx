@@ -149,7 +149,7 @@ export function BillsDesktopTable(props: DesktopProps) {
           })}
         </div>
       </div>
-      <div className="responsive-table-wrap">
+      <div className="responsive-table-wrap table-sticky-head rounded-b-xl">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--header-bg)]">

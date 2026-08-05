@@ -297,6 +297,24 @@ a {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Freeze the header row: the wrapper becomes the vertical scroll box. */
+.table-sticky-head {
+  max-height: min(70vh, 44rem);
+  overflow-y: auto;
+}
+
+.table-sticky-head thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  /* --header-bg is translucent; composite it over an opaque base so rows
+     scrolling underneath don't show through. */
+  background-color: var(--bg-base);
+  background-image: linear-gradient(var(--header-bg), var(--header-bg));
+  /* border-collapse drops the <tr> border-b on sticky cells — redraw it. */
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
 @media (max-width: 768px) {
   .responsive-table-wrap table {
     font-size: 0.8125rem;
