@@ -29,11 +29,58 @@ export const Route = createRootRoute({
       {
         title: 'Gestión de Cartera',
       },
+      {
+        name: 'theme-color',
+        content: '#09060f',
+      },
+      {
+        name: 'mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: 'Cartera',
+      },
+      {
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'black-translucent',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        sizes: '48x48',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/icons/favicon-32.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/icons/favicon-16.png',
+      },
+      // iOS ignores the manifest icons entirely and reads only this.
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/apple-touch-icon.png',
       },
     ],
   }),
@@ -42,7 +89,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />

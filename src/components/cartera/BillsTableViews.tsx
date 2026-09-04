@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   Filter,
   MapPin,
+  Search,
   UserRound,
   Wallet,
 } from "lucide-react";
@@ -392,6 +393,31 @@ export function BillsMobileList(
           onPendingVendedorChange={setPendingVendedorIds}
           onPendingCiudadChange={setPendingCiudadIds}
           onPendingSaldoChange={setPendingSaldoMin}
+          hasActiveFilter={
+            openFilter === "cliente"
+              ? props.filterClienteIds.length > 0
+              : openFilter === "vendedor"
+                ? props.filterVendedorIds.length > 0
+                : openFilter === "ciudad"
+                  ? props.filterCiudadIds.length > 0
+                  : props.filterSaldoMin != null
+          }
+          onClear={() => {
+            if (openFilter === "cliente") {
+              setPendingClienteIds([]);
+              props.setFilterClienteIds([]);
+            } else if (openFilter === "vendedor") {
+              setPendingVendedorIds([]);
+              props.setFilterVendedorIds([]);
+            } else if (openFilter === "ciudad") {
+              setPendingCiudadIds([]);
+              props.setFilterCiudadIds([]);
+            } else {
+              setPendingSaldoMin(null);
+              props.setFilterSaldoMin(null);
+            }
+            setOpenFilter(null);
+          }}
           onApply={() => {
             props.setFilterClienteIds(pendingClienteIds);
             props.setFilterVendedorIds(pendingVendedorIds);
@@ -446,6 +472,8 @@ function MobileFilterDrawer({
   onPendingVendedorChange,
   onPendingCiudadChange,
   onPendingSaldoChange,
+  hasActiveFilter,
+  onClear,
   onClose,
   onApply,
 }: {
@@ -461,30 +489,62 @@ function MobileFilterDrawer({
   onPendingVendedorChange: (ids: string[]) => void;
   onPendingCiudadChange: (ids: string[]) => void;
   onPendingSaldoChange: (value: number | null) => void;
+  hasActiveFilter: boolean;
+  onClear: () => void;
   onClose: () => void;
   onApply: () => void;
 }) {
-  const title =
+  const columnLabel =
     openFilter === "cliente"
-      ? "Filtrar por cliente"
+      ? "Cliente"
       : openFilter === "vendedor"
-        ? "Filtrar por vendedor"
+        ? "Vendedor"
         : openFilter === "ciudad"
-          ? "Filtrar por ciudad"
-          : "Filtrar por saldo";
+          ? "Ciudad"
+          : "Saldo";
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // The drawer stays mounted when the open column changes, so drop the query.
+  useEffect(() => {
+    setSearch("");
+  }, [openFilter]);
+
+  const options =
+    openFilter === "cliente"
+      ? uniqueClientes
+      : openFilter === "vendedor"
+        ? uniqueVendedores
+        : openFilter === "ciudad"
+          ? uniqueCiudades
+          : [];
+  const filteredOptions = options.filter((o) =>
+    (o.nombre ?? "").toLowerCase().includes(search.toLowerCase().trim()),
+  );
+
+  if (!mounted) return null;
+
+  // Portaled to <body>: the section wrapping the table carries a persistent
+  // `transform` (`.rise-in` uses animation-fill-mode: both), which would make it
+  // the containing block for `fixed` and drop the sheet at the bottom of the
+  // page content instead of the bottom of the screen.
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/40 md:hidden"
+      className="fixed inset-0 z-60 flex items-end bg-black/40 md:hidden"
       onClick={onClose}
     >
       <div
-        className="island-shell w-full rounded-t-2xl bg-[var(--surface-strong)] p-4"
+        className="island-shell max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--surface-strong)] p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
           <h4 className="text-sm font-semibold text-[var(--sea-ink)]">
-            {title}
+            Filtrar por {columnLabel.toLowerCase()}
           </h4>
           <button
             type="button"
@@ -494,6 +554,16 @@ function MobileFilterDrawer({
             Cerrar
           </button>
         </div>
+
+        {hasActiveFilter && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="mb-3 text-xs text-[var(--lagoon)] hover:underline"
+          >
+            Borrar filtro de {columnLabel}
+          </button>
+        )}
 
         {openFilter === "saldo" ? (
           <div className="space-y-2">
@@ -512,56 +582,61 @@ function MobileFilterDrawer({
               }
               className="w-full rounded border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
             />
-            <button
-              type="button"
-              onClick={() => onPendingSaldoChange(null)}
-              className="text-xs text-[var(--lagoon)] hover:underline"
-            >
-              Quitar filtro saldo
-            </button>
           </div>
         ) : (
-          <div className="max-h-64 space-y-2 overflow-y-auto">
-            {(openFilter === "cliente"
-              ? uniqueClientes
-              : openFilter === "vendedor"
-                ? uniqueVendedores
-                : uniqueCiudades
-            ).map((item) => {
-              const selectedIds =
-                openFilter === "cliente"
-                  ? pendingClienteIds
-                  : openFilter === "vendedor"
-                    ? pendingVendedorIds
-                    : pendingCiudadIds;
-              const setSelected =
-                openFilter === "cliente"
-                  ? onPendingClienteChange
-                  : openFilter === "vendedor"
-                    ? onPendingVendedorChange
-                    : onPendingCiudadChange;
-              const checked = selectedIds.includes(item.id);
-              return (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() =>
-                      setSelected(
-                        checked
-                          ? selectedIds.filter((id) => id !== item.id)
-                          : [...selectedIds, item.id],
-                      )
-                    }
-                  />
-                  <span>{item.nombre ?? "—"}</span>
-                </label>
-              );
-            })}
-          </div>
+          <>
+            <div className="relative mb-2">
+              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--sea-ink-soft)]" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full rounded border border-[var(--line)] bg-[var(--surface)] py-2 pl-8 pr-2 text-sm"
+              />
+            </div>
+            <div className="max-h-64 space-y-2 overflow-y-auto">
+              {filteredOptions.length === 0 && (
+                <p className="py-2 text-center text-xs text-[var(--sea-ink-soft)]">
+                  Sin resultados
+                </p>
+              )}
+              {filteredOptions.map((item) => {
+                const selectedIds =
+                  openFilter === "cliente"
+                    ? pendingClienteIds
+                    : openFilter === "vendedor"
+                      ? pendingVendedorIds
+                      : pendingCiudadIds;
+                const setSelected =
+                  openFilter === "cliente"
+                    ? onPendingClienteChange
+                    : openFilter === "vendedor"
+                      ? onPendingVendedorChange
+                      : onPendingCiudadChange;
+                const checked = selectedIds.includes(item.id);
+                return (
+                  <label
+                    key={item.id}
+                    className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setSelected(
+                          checked
+                            ? selectedIds.filter((id) => id !== item.id)
+                            : [...selectedIds, item.id],
+                        )
+                      }
+                    />
+                    <span>{item.nombre ?? "—"}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </>
         )}
 
         <div className="mt-4 flex justify-end gap-2">
@@ -581,7 +656,8 @@ function MobileFilterDrawer({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

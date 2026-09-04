@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type ColumnFilterPopoverProps =
   | {
@@ -18,6 +19,132 @@ type ColumnFilterPopoverProps =
       anchorRef: React.RefObject<HTMLElement | null>;
     };
 
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * The popover lives inside `.responsive-table-wrap.table-sticky-head`, a box that
+ * clips on both axes (overflow-x/y: auto). Anchoring it with `position: absolute`
+ * gets it chopped whenever that box is short — e.g. after filtering down to one
+ * row. So we portal it to <body> and position it with `fixed`, tracking the
+ * anchor's viewport rect.
+ */
+function useAnchoredPosition(
+  anchorRef: React.RefObject<HTMLElement | null>,
+  popoverRef: React.RefObject<HTMLElement | null>,
+  ready: boolean,
+) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    const anchor = anchorRef.current;
+    const popover = popoverRef.current;
+    if (!anchor || !popover) return;
+
+    const update = () => {
+      const rect = anchor.getBoundingClientRect();
+      const { offsetWidth: width, offsetHeight: height } = popover;
+
+      let left = Math.min(
+        rect.left,
+        window.innerWidth - width - VIEWPORT_MARGIN,
+      );
+      left = Math.max(left, VIEWPORT_MARGIN);
+
+      let top = rect.bottom + 4;
+      if (top + height > window.innerHeight - VIEWPORT_MARGIN) {
+        const above = rect.top - height - 4;
+        top =
+          above >= VIEWPORT_MARGIN
+            ? above
+            : Math.max(
+                VIEWPORT_MARGIN,
+                window.innerHeight - height - VIEWPORT_MARGIN,
+              );
+      }
+
+      setPos((prev) =>
+        prev && prev.top === top && prev.left === left ? prev : { top, left },
+      );
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    // capture: true so scrolling the table wrapper (not just the page) is seen.
+    window.addEventListener("scroll", update, true);
+    // The popover resizes as the search box narrows the option list.
+    const observer = new ResizeObserver(update);
+    observer.observe(popover);
+
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      observer.disconnect();
+    };
+  }, [anchorRef, popoverRef, ready]);
+
+  return pos;
+}
+
+function AnchoredPopover({
+  anchorRef,
+  onClose,
+  className = "",
+  children,
+}: {
+  anchorRef: React.RefObject<HTMLElement | null>;
+  onClose: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        popoverRef.current?.contains(e.target as Node) ||
+        anchorRef.current?.contains(e.target as Node)
+      ) {
+        return;
+      }
+      onClose();
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [anchorRef, onClose]);
+
+  const pos = useAnchoredPosition(anchorRef, popoverRef, mounted);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      ref={popoverRef}
+      style={{
+        top: pos?.top ?? 0,
+        left: pos?.left ?? 0,
+        visibility: pos ? undefined : "hidden",
+      }}
+      className={`fixed z-50 max-w-[calc(100vw-16px)] rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] p-3 shadow-lg ${className}`}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
 function SaldoFilterPopover({
   value,
   onApply,
@@ -30,26 +157,12 @@ function SaldoFilterPopover({
   anchorRef: React.RefObject<HTMLElement | null>;
 }) {
   const [pending, setPending] = useState<number | null>(() => value);
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        popoverRef.current?.contains(e.target as Node) ||
-        anchorRef.current?.contains(e.target as Node)
-      ) {
-        return;
-      }
-      onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [anchorRef, onClose]);
 
   return (
-    <div
-      ref={popoverRef}
-      className="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] p-3 shadow-lg"
+    <AnchoredPopover
+      anchorRef={anchorRef}
+      onClose={onClose}
+      className="min-w-[200px]"
     >
       <p className="mb-2 text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
         Filtrar por saldo
@@ -118,40 +231,25 @@ function SaldoFilterPopover({
           Aceptar
         </button>
       </div>
-    </div>
+    </AnchoredPopover>
   );
 }
 
-export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
-  const { onClose, anchorRef } = props;
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        popoverRef.current?.contains(e.target as Node) ||
-        anchorRef.current?.contains(e.target as Node)
-      ) {
-        return;
-      }
-      onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [anchorRef, onClose]);
-
-  if (props.column === "saldo") {
-    return (
-      <SaldoFilterPopover
-        value={props.value}
-        onApply={props.onApply}
-        onClose={onClose}
-        anchorRef={anchorRef}
-      />
-    );
-  }
-
-  const { options, value, onApply } = props;
+function MultiSelectFilterPopover({
+  column,
+  options,
+  value,
+  onApply,
+  onClose,
+  anchorRef,
+}: {
+  column: "cliente" | "vendedor" | "ciudad";
+  options: { id: string; nombre: string }[];
+  value: string[];
+  onApply: (ids: string[]) => void;
+  onClose: () => void;
+  anchorRef: React.RefObject<HTMLElement | null>;
+}) {
   const [search, setSearch] = useState("");
   const [pendingIds, setPendingIds] = useState<Set<string>>(
     () => new Set(value),
@@ -192,17 +290,21 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
     }
   };
 
+  const label =
+    column === "vendedor"
+      ? "Vendedor"
+      : column === "ciudad"
+        ? "Ciudad"
+        : "Cliente";
+
   return (
-    <div
-      ref={popoverRef}
-      className="absolute left-0 top-full z-50 mt-1 max-h-[320px] min-w-[240px] rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] p-3 shadow-lg"
+    <AnchoredPopover
+      anchorRef={anchorRef}
+      onClose={onClose}
+      className="max-h-[320px] min-w-[240px]"
     >
       <p className="mb-2 text-xs font-semibold uppercase text-[var(--sea-ink-soft)]">
-        {props.column === "vendedor"
-          ? "Filtrar por vendedor"
-          : props.column === "ciudad"
-            ? "Filtrar por ciudad"
-            : "Filtrar por cliente"}
+        Filtrar por {label.toLowerCase()}
       </p>
       {value.length > 0 && (
         <button
@@ -213,12 +315,7 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
           }}
           className="mb-2 text-xs text-[var(--lagoon)] hover:underline"
         >
-          Borrar filtro de{" "}
-          {props.column === "vendedor"
-            ? "Vendedor"
-            : props.column === "ciudad"
-              ? "Ciudad"
-              : "Cliente"}
+          Borrar filtro de {label}
         </button>
       )}
       <div className="relative mb-2">
@@ -244,7 +341,10 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
       </label>
       <div className="max-h-48 overflow-y-auto">
         {filteredOptions.map((o) => (
-          <label key={o.id} className="flex cursor-pointer items-center gap-2 py-1 text-sm">
+          <label
+            key={o.id}
+            className="flex cursor-pointer items-center gap-2 py-1 text-sm"
+          >
             <input
               type="checkbox"
               checked={pendingIds.has(o.id)}
@@ -281,6 +381,34 @@ export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
           Aceptar
         </button>
       </div>
-    </div>
+    </AnchoredPopover>
+  );
+}
+
+/**
+ * Dispatcher only — it must not call hooks of its own, otherwise switching
+ * between the saldo and multi-select variants changes the hook order.
+ */
+export function ColumnFilterPopover(props: ColumnFilterPopoverProps) {
+  if (props.column === "saldo") {
+    return (
+      <SaldoFilterPopover
+        value={props.value}
+        onApply={props.onApply}
+        onClose={props.onClose}
+        anchorRef={props.anchorRef}
+      />
+    );
+  }
+
+  return (
+    <MultiSelectFilterPopover
+      column={props.column}
+      options={props.options}
+      value={props.value}
+      onApply={props.onApply}
+      onClose={props.onClose}
+      anchorRef={props.anchorRef}
+    />
   );
 }
